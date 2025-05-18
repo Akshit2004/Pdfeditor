@@ -1,0 +1,283 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Core colors */
+  --primary-color: #9d4edd;
+  --secondary-color: #6a11cb;
+  --dark-color: #0f0f1a;
+  --light-color: #ffffff;
+  --accent-color: #7b2cbf;
+  
+  /* Gradients */
+  --primary-gradient: linear-gradient(135deg, #6a11cb 0%, #9d4edd 100%);
+  --secondary-gradient: linear-gradient(135deg, #9d4edd 0%, #c77dff 100%);
+  --accent-gradient: linear-gradient(90deg, #7b2cbf 0%, #c77dff 50%, #7b2cbf 100%);
+  --glow-gradient: radial-gradient(circle, rgba(157, 78, 221, 0.4) 0%, rgba(106, 17, 203, 0.1) 70%, rgba(15, 15, 26, 0) 100%);
+  
+  /* UI elements */
+  --card-bg: rgba(25, 25, 40, 0.8);
+  --glass-bg: rgba(25, 25, 40, 0.6);
+  --border-radius: 12px;
+  --transition-slow: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+  --transition-normal: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  --transition-fast: all 0.15s cubic-bezier(0.25, 1, 0.5, 1);
+  --box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
+  --glow-shadow: 0 0 40px rgba(157, 78, 221, 0.4);
+}
+
+.upload-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-family: 'Space Grotesk', sans-serif;
+  background: none;
+  color: var(--light-color);
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.upload-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--dark-color);
+  opacity: 0.96;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Background shapes */
+.bg-shapes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -2;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.shape {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--primary-gradient);
+  filter: blur(80px);
+  opacity: 0.18;
+  transition: var(--transition-slow);
+  z-index: -1;
+}
+
+.shape-1 {
+  top: 10%;
+  left: 5%;
+  width: 50vw;
+  height: 50vw;
+  animation: float1 30s infinite alternate;
+  background: linear-gradient(45deg, var(--secondary-color), transparent);
+}
+
+.shape-2 {
+  top: 60%;
+  right: -10%;
+  width: 40vw;
+  height: 40vw;
+  animation: float2 35s infinite alternate;
+  background: linear-gradient(135deg, var(--primary-color), transparent);
+}
+
+.shape-3 {
+  bottom: -20%;
+  left: 30%;
+  width: 45vw;
+  height: 45vw;
+  animation: float3 40s infinite alternate;
+  background: linear-gradient(225deg, var(--accent-color), transparent);
+}
+
+@keyframes float1 {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0.15; }
+  100% { transform: translate(5vw, 5vh) rotate(45deg); opacity: 0.1; }
+}
+
+@keyframes float2 {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0.18; }
+  100% { transform: translate(-4vw, -4vh) rotate(-30deg); opacity: 0.09; }
+}
+
+@keyframes float3 {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0.12; }
+  100% { transform: translate(6vw, -2vh) rotate(60deg); opacity: 0.08; }
+}
+
+.upload-page h1 {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: var(--light-color);
+  font-weight: 700;
+  font-size: 2.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.upload-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  border: 2px dashed rgba(157, 78, 221, 0.5);
+  border-radius: var(--border-radius);
+  padding: 2.5rem;
+  margin: 2rem 0;
+  transition: var(--transition-normal);
+  background-color: var(--card-bg);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--box-shadow);
+}
+
+.upload-area.dragging {
+  border-color: var(--primary-color);
+  background-color: var(--glass-bg);
+  box-shadow: var(--glow-shadow);
+}
+
+.upload-icon {
+  font-size: 4rem;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+.upload-area p {
+  margin-bottom: 1.5rem;
+  font-size: 1.2rem;
+  color: var(--light-color);
+}
+
+.upload-btn {
+  background: var(--primary-gradient);
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: var(--transition-normal);
+  box-shadow: var(--box-shadow);
+}
+
+.upload-btn:hover {
+  background: var(--secondary-gradient);
+  transform: translateY(-2px);
+  box-shadow: var(--glow-shadow);
+}
+
+.file-input {
+  display: none;
+}
+
+.pdf-viewer-container {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--dark-color);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  box-shadow: var(--box-shadow);
+  border: 1px solid rgba(157, 78, 221, 0.3);
+}
+
+.pdf-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid rgba(157, 78, 221, 0.3);
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--light-color);
+}
+
+.pdf-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-btn, .clear-btn {
+  background-color: transparent;
+  border: 1px solid rgba(157, 78, 221, 0.5);
+  border-radius: var(--border-radius);
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-fast);
+  color: var(--light-color);
+}
+
+.nav-btn:hover, .clear-btn:hover {
+  background-color: rgba(157, 78, 221, 0.2);
+  border-color: var(--primary-color);
+}
+
+.nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.clear-btn {
+  margin-left: 0.5rem;
+  color: #ff6b6b;
+}
+
+.page-info {
+  font-size: 0.9rem;
+  color: var(--light-color);
+}
+
+.pdf-document-container {
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem;
+  background: var(--glass-bg);
+  min-height: 500px;
+  overflow: auto;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+}
+
+.pdf-document {
+  box-shadow: 0 0 40px rgba(157, 78, 221, 0.18), 0 2px 8px rgba(0,0,0,0.2);
+  border-radius: var(--border-radius);
+}
+
+.pdf-page {
+  margin: 0 auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .upload-page {
+    padding: 1rem;
+  }
+  
+  .pdf-controls {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .pdf-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
