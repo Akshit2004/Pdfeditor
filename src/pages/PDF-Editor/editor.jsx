@@ -3,18 +3,27 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { FaTrashAlt, FaGripVertical } from 'react-icons/fa';
 import { PDFDocument } from 'pdf-lib';
+import { useLocation } from 'react-router-dom';
 import './editor.css';
 
 // Use a direct path to the worker file instead of process.env
 pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.js';
 
 const PDFEditor = () => {
+  const location = useLocation();
   const [pdfFile, setPdfFile] = useState(null);
   const [numPages, setNumPages] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [scale, setScale] = useState(1.0);
   const [isLoaded, setIsLoaded] = useState(false);
   const [pageOrder, setPageOrder] = useState([]);
+
+  // On mount, set pdfFile from location.state if available
+  useEffect(() => {
+    if (location.state && location.state.pdfFile) {
+      setPdfFile(location.state.pdfFile);
+    }
+  }, [location.state]);
 
   // Function to handle document loading
   const onDocumentLoadSuccess = ({ numPages }) => {
@@ -31,12 +40,15 @@ const PDFEditor = () => {
     }
   };
 
-  // Function to handle file input
+  // Function to handle file input (fallback if user visits /editor directly)
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file && file.type === 'application/pdf') {
-      const fileURL = URL.createObjectURL(file);
-      setPdfFile(fileURL);
+      const fileReader = new FileReader();
+      fileReader.onload = () => {
+        setPdfFile(fileReader.result);
+      };
+      fileReader.readAsDataURL(file);
     }
   };
 
@@ -77,26 +89,23 @@ const PDFEditor = () => {
       const [copiedPage] = await newPdf.copyPages(srcPdf, [pageOrder[i] - 1]);
       newPdf.addPage(copiedPage);
     }
-        <h2>PDF Editor</h2>
-        <div className="text-tools">
-          <button className="text-tool-btn" onClick={handleTextEdit}>Text</button>
-          <button className="text-tool-btn">Font</button>
-          <button className="text-tool-btn">Size</button>
-          <button className="text-tool-btn">Color</button>
-          <button className="text-tool-btn">Bold</button>
-          <button className="text-tool-btn">Italic</button>
-          <button className="text-tool-btn">Underline</button>
-          {!pdfFile && (
-            <input 
-              type="file" 
-              accept="application/pdf" 
-              onChange={handleFileChange} 
-              className="text-tool-btn"
-            />
-          )}
-        </div>
-      </div>
+    const pdfBytes = await newPdf.save();
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'reordered.pdf';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+  };
 
+  // Render
+  return (
+    <div className="editor-container">
       {/* Current Page View */}
       <div className="current-page-container">
         {pdfFile && pageOrder.length > 0 ? (
@@ -118,6 +127,12 @@ const PDFEditor = () => {
             <p style={{ textAlign: 'center', paddingTop: '40%' }}>
               No PDF loaded. Please upload a PDF file.
             </p>
+            <input 
+              type="file" 
+              accept="application/pdf" 
+              onChange={handleFileChange} 
+              style={{ marginTop: 24 }}
+            />
           </div>
         )}
       </div>
@@ -141,8 +156,7 @@ const PDFEditor = () => {
           <button className="tool-btn" onClick={zoomOut}>Zoom Out</button>
         </div>
         <div className="tool-group">
-          <button className="tool-btn">Save</button>
-          <button className="tool-btn">Download</button>
+          <button className="tool-btn" onClick={handleDownload}>Download</button>
         </div>
       </div>
 
