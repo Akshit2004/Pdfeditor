@@ -22,6 +22,10 @@ const PDFEditor = () => {
   useEffect(() => {
     if (location.state && location.state.pdfFile) {
       setPdfFile(location.state.pdfFile);
+    } else {
+      // fallback to localStorage
+      const stored = localStorage.getItem('pdfFile');
+      if (stored) setPdfFile(stored);
     }
   }, [location.state]);
 

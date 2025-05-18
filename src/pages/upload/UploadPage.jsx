@@ -22,11 +22,13 @@ const UploadPage = () => {
       fileReader.onload = () => {
         setPdfFile(fileReader.result);
         setPageNumber(1);
+        localStorage.setItem('pdfFile', fileReader.result);
       };
       fileReader.readAsDataURL(file);
     } else {
       alert('Please select a valid PDF file');
       setPdfFile(null);
+      localStorage.removeItem('pdfFile');
     }
   };
 
@@ -49,6 +51,7 @@ const UploadPage = () => {
       fileReader.onload = () => {
         setPdfFile(fileReader.result);
         setPageNumber(1);
+        localStorage.setItem('pdfFile', fileReader.result);
       };
       fileReader.readAsDataURL(file);
     } else {
@@ -75,6 +78,7 @@ const UploadPage = () => {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+    localStorage.removeItem('pdfFile');
   };
 
   const triggerFileInput = () => {
