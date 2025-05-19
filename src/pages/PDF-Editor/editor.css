@@ -268,6 +268,18 @@
   text-shadow: 0 1px 8px #9d4edd22;
 }
 
+/* Highlight the active tool visually */
+.toolbar-tool.active-tool {
+  background: rgba(157, 78, 221, 0.13);
+  border-radius: 12px;
+  color: #9d4edd;
+  box-shadow: 0 2px 8px #9d4edd22;
+  transform: scale(1.08);
+}
+.toolbar-tool.active-tool .tool-icon {
+  color: #9d4edd;
+}
+
 /* =====================
    Responsive Toolbar
    ===================== */
