@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { FaFileUpload, FaEdit, FaTrash, FaDownload, FaMagic, FaArrowsAlt } from 'react-icons/fa';
+import { FaFileUpload, FaEdit, FaTrash, FaDownload, FaMagic } from 'react-icons/fa';
 import { pdfjs, Document, Page } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
@@ -10,7 +10,7 @@ import EditToolbar from './EditToolbar';
 const TOOLBAR_TOOLS = [
   { icon: <FaEdit />, label: 'Edit' },
   { icon: <FaMagic />, label: 'Enhance' },
-  { icon: <FaArrowsAlt />, label: 'Reorder' },
+  // { icon: <FaArrowsAlt />, label: 'Move' }, // Removed Move tool from main toolbar
   { icon: <FaTrash />, label: 'Delete' },
   { icon: <FaDownload />, label: 'Download' },
 ];
@@ -41,8 +41,9 @@ export default function Editor() {
   const [currentDraw, setCurrentDraw] = useState([]);
   const [deleteMode, setDeleteMode] = useState(false);
   const [eraseMode, setEraseMode] = useState(false);
-  const [pageHistory, setPageHistory] = useState([1]); // Undo/redo stacks for page navigation
-  const [redoStack, setRedoStack] = useState([]);
+  const [moveMode, setMoveMode] = useState(false);
+  const [movingElement, setMovingElement] = useState(null);
+  const [moveOffset, setMoveOffset] = useState({ x: 0, y: 0 });
   const pdfContainerRef = useRef(null);
 
   const handleFileChange = (e) => {
@@ -64,27 +65,7 @@ export default function Editor() {
 
   const handlePageChange = (newPage) => {
     if (newPage !== pageNumber && newPage >= 1 && newPage <= numPages) {
-      setPageHistory(prev => [...prev, newPage]);
-      setRedoStack([]); // Clear redo stack on new navigation
       setPageNumber(newPage);
-    }
-  };
-
-  const handleUndoPage = () => {
-    if (pageHistory.length > 1) {
-      setRedoStack(prev => [pageHistory[pageHistory.length - 1], ...prev]);
-      const newHistory = pageHistory.slice(0, -1);
-      setPageHistory(newHistory);
-      setPageNumber(newHistory[newHistory.length - 1]);
-    }
-  };
-
-  const handleRedoPage = () => {
-    if (redoStack.length > 0) {
-      const nextPage = redoStack[0];
-      setPageHistory(prev => [...prev, nextPage]);
-      setPageNumber(nextPage);
-      setRedoStack(redoStack.slice(1));
     }
   };
 
@@ -94,26 +75,30 @@ export default function Editor() {
       setActiveEditTool(null);
       setDeleteMode(false);
       setEraseMode(false);
-    } else if (tool === 'undo') {
-      handleUndoPage();
-      // Don't change activeEditTool for undo/redo
-      setDeleteMode(false);
-      setEraseMode(false);
-    } else if (tool === 'redo') {
-      handleRedoPage();
-      setDeleteMode(false);
-      setEraseMode(false);
+      setMoveMode(false);
+      setMovingElement(null);
     } else {
       setActiveEditTool(tool);
       if (tool === 'Delete') {
         setDeleteMode(true);
         setEraseMode(false);
+        setMoveMode(false);
+        setMovingElement(null);
       } else if (tool === 'erase') {
         setEraseMode(true);
         setDeleteMode(false);
+        setMoveMode(false);
+        setMovingElement(null);
+      } else if (tool === 'Move') {
+        setMoveMode(true);
+        setDeleteMode(false);
+        setEraseMode(false);
+        setMovingElement(null);
       } else {
         setDeleteMode(false);
         setEraseMode(false);
+        setMoveMode(false);
+        setMovingElement(null);
       }
     }
   };
@@ -158,6 +143,44 @@ export default function Editor() {
         setCurrentDraw(draw => [...draw, { x, y }]);
       }
     }
+    if (moveMode && movingElement) {
+      const x = e.clientX - moveOffset.x;
+      const y = e.clientY - moveOffset.y;
+      if (movingElement.type === 'text') {
+        setTextElements(els =>
+          els.map(el =>
+            el.id === movingElement.id
+              ? { ...el, position: { x, y } }
+              : el
+          )
+        );
+      }
+      if (movingElement.type === 'highlight') {
+        setHighlightElements(els =>
+          els.map(el =>
+            el.id === movingElement.id
+              ? { ...el, x, y }
+              : el
+          )
+        );
+      }
+      if (movingElement.type === 'draw') {
+        // Calculate the delta from the original position
+        const deltaX = x - movingElement.start.x;
+        const deltaY = y - movingElement.start.y;
+        setDrawElements(els =>
+          els.map(el =>
+            el.id === movingElement.id
+              ? {
+                  ...el,
+                  // Move all points by the same delta, always from the original points
+                  points: movingElement.originalPoints.map(pt => ({ x: pt.x + deltaX, y: pt.y + deltaY }))
+                }
+              : el
+          )
+        );
+      }
+    }
   };
 
   const handleMouseUp = (e) => {
@@ -190,6 +213,9 @@ export default function Editor() {
       setIsDrawing(false);
       setCurrentDraw([]);
     }
+    if (moveMode && movingElement) {
+      setMovingElement(null);
+    }
   };
 
   const handleMouseDown = (e) => {
@@ -202,6 +228,31 @@ export default function Editor() {
         setCurrentDraw([{ x, y }]);
       }
     }
+  };
+
+  const handleElementMouseDown = (type, id, e) => {
+    if (!moveMode) return;
+    e.stopPropagation();
+    let el;
+    if (type === 'text') el = textElements.find(t => t.id === id);
+    if (type === 'highlight') el = highlightElements.find(h => h.id === id);
+    if (type === 'draw') el = drawElements.find(d => d.id === id);
+    if (!el) return;
+    let pos;
+    if (type === 'text') pos = el.position;
+    if (type === 'highlight') pos = { x: el.x, y: el.y };
+    if (type === 'draw') pos = el.points[0];
+    setMovingElement({
+      type,
+      id,
+      start: pos,
+      // Store original points for draw so we can always apply delta to the original
+      originalPoints: type === 'draw' ? el.points.map(pt => ({ ...pt })) : undefined
+    });
+    setMoveOffset({
+      x: e.clientX - pos.x,
+      y: e.clientY - pos.y,
+    });
   };
 
   const handleTextInputChange = (e) => {
@@ -256,6 +307,47 @@ export default function Editor() {
     setShowEditToolbar(false);
   };
 
+  // Download PDF functionality
+  const handleDownloadPdf = () => {
+    // Use the original file if no edits, or render the edited PDF if edits exist
+    // For now, just download the original file
+    if (pdfFile) {
+      const url = URL.createObjectURL(pdfFile);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = pdfFile.name || 'document.pdf';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+    }
+  };
+
+  // Delete mode: delete the current page from the PDF
+  const handleDeletePage = () => {
+    if (!pdfFile || !numPages || numPages <= 1) return;
+    // Read the PDF as ArrayBuffer and use PDF-lib to remove the page
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      const { PDFDocument } = await import('pdf-lib');
+      const arrayBuffer = e.target.result;
+      const pdfDoc = await PDFDocument.load(arrayBuffer);
+      pdfDoc.removePage(pageNumber - 1);
+      const newPdfBytes = await pdfDoc.save();
+      const newFile = new File([newPdfBytes], pdfFile.name || 'document.pdf', { type: 'application/pdf' });
+      setPdfFile(newFile);
+      setNumPages(numPages - 1);
+      setPageNumber(Math.max(1, Math.min(pageNumber, numPages - 1)));
+      // Optionally clear annotations for deleted page
+      setTextElements(textElements.filter(el => el.page !== pageNumber));
+      setHighlightElements(highlightElements.filter(el => el.page !== pageNumber));
+      setDrawElements(drawElements.filter(el => el.page !== pageNumber));
+    };
+    reader.readAsArrayBuffer(pdfFile);
+  };
+
   return (
     <div className="editor-bg">
       {showModal && (
@@ -305,6 +397,12 @@ export default function Editor() {
                 {eraseMode && (
                   <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 20, background: '#e0f7fa', color: '#00796b', padding: '6px 12px', borderRadius: 4, fontWeight: 600, boxShadow: '0 1px 4px #0002' }}>
                     Erase Mode: Click a text, highlight, drawing, or image to erase it
+                  </div>
+                )}
+                {/* Move mode indicator */}
+                {moveMode && (
+                  <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 20, background: '#e0e7ff', color: '#3730a3', padding: '6px 12px', borderRadius: 4, fontWeight: 600, boxShadow: '0 1px 4px #0002' }}>
+                    Move Mode: Drag and drop text, highlight, or drawing
                   </div>
                 )}
                 {/* Tool color pickers */}
@@ -362,22 +460,25 @@ export default function Editor() {
                       height: el.height,
                       background: el.color,
                       opacity: 0.4,
-                      pointerEvents: (deleteMode || eraseMode) ? 'auto' : 'none',
+                      pointerEvents: (deleteMode || eraseMode || moveMode) ? 'auto' : 'none',
                       borderRadius: 2,
-                      cursor: (deleteMode || eraseMode) ? 'pointer' : 'default',
-                      border: deleteMode ? '2px solid #c00' : eraseMode ? '2px solid #00796b' : 'none',
+                      cursor: moveMode ? 'move' : (deleteMode || eraseMode) ? 'pointer' : 'default',
+                      border: deleteMode ? '2px solid #c00' : eraseMode ? '2px solid #00796b' : moveMode ? '2px solid #3730a3' : 'none',
                       boxSizing: 'border-box',
                     }}
+                    onMouseDown={moveMode ? (e) => handleElementMouseDown('highlight', el.id, e) : undefined}
                     onClick={
                       deleteMode || eraseMode
                         ? () => handleDeleteHighlight(el.id)
                         : undefined
                     }
                     title={
-                      deleteMode
-                        ? 'Click to delete highlight'
-                        : eraseMode
-                          ? 'Click to erase highlight'
+                      moveMode
+                        ? 'Drag to move highlight'
+                        : deleteMode
+                          ? 'Click to delete highlight'
+                          : eraseMode
+                            ? 'Click to erase highlight'
                           : ''
                     }
                   />
@@ -409,20 +510,24 @@ export default function Editor() {
                       top: 0,
                       width: '100%',
                       height: '100%',
-                      pointerEvents: (deleteMode || eraseMode) ? 'auto' : 'none',
-                      cursor: (deleteMode || eraseMode) ? 'pointer' : 'default',
-                      zIndex: 2,
+                      pointerEvents: (deleteMode || eraseMode || moveMode) ? 'auto' : 'none',
+                      cursor: moveMode ? 'move' : (deleteMode || eraseMode) ? 'pointer' : 'default',
+                      zIndex: 2, // <-- Remove dynamic zIndex, use a constant for all drawings
+                      border: moveMode ? '2px solid #3730a3' : undefined,
                     }}
+                    onMouseDown={moveMode ? (e) => { e.stopPropagation(); handleElementMouseDown('draw', el.id, e); } : undefined}
                     onClick={
                       deleteMode || eraseMode
                         ? () => handleDeleteDraw(el.id)
                         : undefined
                     }
                     title={
-                      deleteMode
-                        ? 'Click to delete drawing'
-                        : eraseMode
-                          ? 'Click to erase drawing'
+                      moveMode
+                        ? 'Drag to move drawing'
+                        : deleteMode
+                          ? 'Click to delete drawing'
+                          : eraseMode
+                            ? 'Click to erase drawing'
                           : ''
                     }
                   >
@@ -434,7 +539,7 @@ export default function Editor() {
                       strokeLinejoin="round"
                       strokeLinecap="round"
                     />
-                    {(deleteMode || eraseMode) && (
+                    {(deleteMode || eraseMode || moveMode) && (
                       <rect x="0" y="0" width="100%" height="100%" fill="transparent" />
                     )}
                   </svg>
@@ -471,22 +576,25 @@ export default function Editor() {
                       left: `${element.position.x}px`,
                       top: `${element.position.y}px`,
                       color: element.color || '#000',
-                      pointerEvents: (deleteMode || eraseMode) ? 'auto' : 'none',
+                      pointerEvents: (deleteMode || eraseMode || moveMode) ? 'auto' : 'none',
                       background: 'transparent',
                       fontSize: 16,
-                      cursor: (deleteMode || eraseMode) ? 'pointer' : 'default',
-                      border: deleteMode ? '1px dashed #c00' : eraseMode ? '1px dashed #00796b' : 'none',
+                      cursor: moveMode ? 'move' : (deleteMode || eraseMode) ? 'pointer' : 'default',
+                      border: deleteMode ? '1px dashed #c00' : eraseMode ? '1px dashed #00796b' : moveMode ? '1px dashed #3730a3' : 'none',
                     }}
+                    onMouseDown={moveMode ? (e) => handleElementMouseDown('text', element.id, e) : undefined}
                     onClick={
                       deleteMode || eraseMode
                         ? () => handleDeleteText(element.id)
                         : undefined
                     }
                     title={
-                      deleteMode
-                        ? 'Click to delete text'
-                        : eraseMode
-                          ? 'Click to erase text'
+                      moveMode
+                        ? 'Drag to move text'
+                        : deleteMode
+                          ? 'Click to delete text'
+                          : eraseMode
+                            ? 'Click to erase text'
                           : ''
                     }
                   >
@@ -532,8 +640,6 @@ export default function Editor() {
               onBack={() => setShowEditToolbar(false)}
               onToolSelect={handleEditToolSelect}
               activeTool={activeEditTool}
-              undoDisabled={pageHistory.length <= 1}
-              redoDisabled={redoStack.length === 0}
             />
           ) : (
             <footer className="editor-toolbar">
@@ -541,7 +647,11 @@ export default function Editor() {
                 <div
                   className="toolbar-tool"
                   key={tool.label}
-                  onClick={() => tool.label === 'Edit' && setShowEditToolbar(true)}
+                  onClick={() => {
+                    if (tool.label === 'Edit') setShowEditToolbar(true);
+                    if (tool.label === 'Delete') handleDeletePage();
+                    if (tool.label === 'Download') handleDownloadPdf();
+                  }}
                 >
                   <div className="tool-icon">{tool.icon}</div>
                   <div className="tool-label">{tool.label}</div>

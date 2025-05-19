@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaArrowLeft, FaFont, FaHighlighter, FaPen, FaEraser, FaUndo, FaRedo } from 'react-icons/fa';
+import { FaArrowLeft, FaFont, FaHighlighter, FaPen, FaEraser, FaArrowsAlt } from 'react-icons/fa';
 import './editor.css';
 
 const EDIT_TOOLS = [
@@ -7,9 +7,10 @@ const EDIT_TOOLS = [
   { icon: <FaHighlighter />, label: 'Highlight', action: 'highlight' },
   { icon: <FaPen />, label: 'Draw', action: 'draw' },
   { icon: <FaEraser />, label: 'Erase', action: 'erase' },
+  { icon: <FaArrowsAlt />, label: 'Move', action: 'Move' },
 ];
 
-export default function EditToolbar({ onBack, onToolSelect, activeTool, undoDisabled, redoDisabled }) {
+export default function EditToolbar({ onBack, onToolSelect, activeTool }) {
   return (
     <div className="editor-toolbar">
       <div className={`toolbar-tool${activeTool === 'back' ? ' active-tool' : ''}`} onClick={() => onToolSelect('back')}>
@@ -26,22 +27,6 @@ export default function EditToolbar({ onBack, onToolSelect, activeTool, undoDisa
           <div className="tool-label">{tool.label}</div>
         </div>
       ))}
-      <div
-        className={`toolbar-tool${activeTool === 'undo' ? ' active-tool' : ''}${undoDisabled ? ' disabled-tool' : ''}`}
-        onClick={() => !undoDisabled && onToolSelect('undo')}
-        style={{ pointerEvents: undoDisabled ? 'none' : undefined, opacity: undoDisabled ? 0.5 : 1 }}
-      >
-        <div className="tool-icon"><FaUndo /></div>
-        <div className="tool-label">Undo</div>
-      </div>
-      <div
-        className={`toolbar-tool${activeTool === 'redo' ? ' active-tool' : ''}${redoDisabled ? ' disabled-tool' : ''}`}
-        onClick={() => !redoDisabled && onToolSelect('redo')}
-        style={{ pointerEvents: redoDisabled ? 'none' : undefined, opacity: redoDisabled ? 0.5 : 1 }}
-      >
-        <div className="tool-icon"><FaRedo /></div>
-        <div className="tool-label">Redo</div>
-      </div>
     </div>
   );
 }
