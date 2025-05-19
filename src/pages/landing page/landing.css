@@ -32,6 +32,16 @@
   box-sizing: border-box;
 }
 
+body, html {
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+body::-webkit-scrollbar, html::-webkit-scrollbar {
+  display: none;
+}
+
 body {
   font-family: 'Space Grotesk', sans-serif;
   background-color: var(--dark-color);
@@ -43,7 +53,8 @@ body {
 .landing {
   min-height: 100vh;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* Background shapes */
