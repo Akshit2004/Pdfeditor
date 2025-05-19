@@ -49,7 +49,7 @@ const Landing = () => {
           <a href="#how-it-works" className="nav-link">Process</a>
           <a href="#pricing" className="nav-link">Plans</a>
         </div>
-        <Link to="/upload" className="cta-button">
+        <Link to="/editor" className="cta-button">
           Try Now <FaRocket className="btn-icon" />
         </Link>
       </nav>
@@ -67,7 +67,7 @@ const Landing = () => {
             Edit, enhance, and collaborate with unprecedented precision and ease.
           </p>
           <div className="hero-buttons">
-            <Link to="/upload" className="primary-button">
+            <Link to="/editor" className="primary-button">
               Launch Editor <FaChevronRight className="btn-icon" />
             </Link>
             <a href="#features" className="secondary-button">
@@ -243,7 +243,7 @@ const Landing = () => {
           <div className="cta-content">
             <h2 className="cta-title">Ready to Experience the Future?</h2>
             <p className="cta-text">Join over 500,000 professionals who've revolutionized their document workflow.</p>
-            <Link to="/upload" className="primary-button pulse">
+            <Link to="/editor" className="primary-button pulse">
               Begin Your Journey <FaChevronRight className="btn-icon" />
             </Link>
           </div>
