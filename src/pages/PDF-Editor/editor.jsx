@@ -64,34 +64,28 @@ export default function Editor() {
 
   const handlePageChange = (newPage) => {
     if (newPage !== pageNumber && newPage >= 1 && newPage <= numPages) {
-      setPageNumber(newPage);
       setPageHistory(prev => [...prev, newPage]);
       setRedoStack([]); // Clear redo stack on new navigation
+      setPageNumber(newPage);
     }
   };
 
   const handleUndoPage = () => {
-    setPageHistory(prev => {
-      if (prev.length > 1) {
-        setRedoStack(rstack => [prev[prev.length - 1], ...rstack]);
-        const newHistory = prev.slice(0, -1);
-        setPageNumber(newHistory[newHistory.length - 1]);
-        return newHistory;
-      }
-      return prev;
-    });
+    if (pageHistory.length > 1) {
+      setRedoStack(prev => [pageHistory[pageHistory.length - 1], ...prev]);
+      const newHistory = pageHistory.slice(0, -1);
+      setPageHistory(newHistory);
+      setPageNumber(newHistory[newHistory.length - 1]);
+    }
   };
 
   const handleRedoPage = () => {
-    setRedoStack(prev => {
-      if (prev.length > 0) {
-        const nextPage = prev[0];
-        setPageNumber(nextPage);
-        setPageHistory(hist => [...hist, nextPage]);
-        return prev.slice(1);
-      }
-      return prev;
-    });
+    if (redoStack.length > 0) {
+      const nextPage = redoStack[0];
+      setPageHistory(prev => [...prev, nextPage]);
+      setPageNumber(nextPage);
+      setRedoStack(redoStack.slice(1));
+    }
   };
 
   const handleEditToolSelect = (tool) => {
@@ -102,6 +96,7 @@ export default function Editor() {
       setEraseMode(false);
     } else if (tool === 'undo') {
       handleUndoPage();
+      // Don't change activeEditTool for undo/redo
       setDeleteMode(false);
       setEraseMode(false);
     } else if (tool === 'redo') {
