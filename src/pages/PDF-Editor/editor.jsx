@@ -5,6 +5,7 @@ import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
 import './editor.css';
 import './react-pdf-overrides.css';
+import EditToolbar from './EditToolbar';
 
 const TOOLBAR_TOOLS = [
   { icon: <FaEdit />, label: 'Edit' },
@@ -22,6 +23,7 @@ export default function Editor() {
   const [showModal, setShowModal] = useState(true);
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
+  const [showEditToolbar, setShowEditToolbar] = useState(false);
   const fileInputRef = useRef();
 
   const handleFileChange = (e) => {
@@ -92,14 +94,23 @@ export default function Editor() {
               <div className="pdf-placeholder">PDF Preview/Editor Area</div>
             )}
           </main>
-          <footer className="editor-toolbar">
-            {TOOLBAR_TOOLS.map((tool, idx) => (
-              <div className="toolbar-tool" key={tool.label}>
-                <div className="tool-icon">{tool.icon}</div>
-                <div className="tool-label">{tool.label}</div>
-              </div>
-            ))}
-          </footer>
+          {/* Toolbar switch logic */}
+          {showEditToolbar ? (
+            <EditToolbar onBack={() => setShowEditToolbar(false)} />
+          ) : (
+            <footer className="editor-toolbar">
+              {TOOLBAR_TOOLS.map((tool, idx) => (
+                <div
+                  className="toolbar-tool"
+                  key={tool.label}
+                  onClick={() => tool.label === 'Edit' && setShowEditToolbar(true)}
+                >
+                  <div className="tool-icon">{tool.icon}</div>
+                  <div className="tool-label">{tool.label}</div>
+                </div>
+              ))}
+            </footer>
+          )}
         </>
       )}
     </div>
