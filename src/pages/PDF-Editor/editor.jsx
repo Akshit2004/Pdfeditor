@@ -10,7 +10,6 @@ import EditToolbar from './EditToolbar';
 const TOOLBAR_TOOLS = [
   { icon: <FaEdit />, label: 'Edit' },
   { icon: <FaMagic />, label: 'Enhance' },
-  // { icon: <FaArrowsAlt />, label: 'Move' }, // Removed Move tool from main toolbar
   { icon: <FaTrash />, label: 'Delete' },
   { icon: <FaDownload />, label: 'Download' },
 ];
@@ -35,16 +34,44 @@ export default function Editor() {
   const [highlightColor, setHighlightColor] = useState('#ffff00'); // highlight color
   const [isHighlighting, setIsHighlighting] = useState(false);
   const [highlightStart, setHighlightStart] = useState(null);
-  const [drawElements, setDrawElements] = useState([]); // draw state
-  const [drawColor, setDrawColor] = useState('#ff0000'); // draw color
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [currentDraw, setCurrentDraw] = useState([]);
   const [deleteMode, setDeleteMode] = useState(false);
   const [eraseMode, setEraseMode] = useState(false);
   const [moveMode, setMoveMode] = useState(false);
   const [movingElement, setMovingElement] = useState(null);
   const [moveOffset, setMoveOffset] = useState({ x: 0, y: 0 });
   const pdfContainerRef = useRef(null);
+  const [enhanceStatus, setEnhanceStatus] = useState('');
+
+  // Download PDF functionality with styled popup menu
+  const [showDownloadPopup, setShowDownloadPopup] = useState(false);
+  const [downloadFileName, setDownloadFileName] = useState('');
+
+  const handleDownloadPdf = () => {
+    if (!pdfFile) return;
+    setDownloadFileName(pdfFile.name || 'document.pdf');
+    setShowDownloadPopup(true);
+  };
+
+  const handleDownloadConfirm = () => {
+    let fileName = downloadFileName.trim();
+    if (!fileName) return;
+    if (!fileName.toLowerCase().endsWith('.pdf')) fileName += '.pdf';
+    const url = URL.createObjectURL(pdfFile);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+    setShowDownloadPopup(false);
+  };
+
+  const handleDownloadCancel = () => {
+    setShowDownloadPopup(false);
+  };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -135,52 +162,6 @@ export default function Editor() {
         setHighlightStart(prev => ({ ...prev, x2: x, y2: y }));
       }
     }
-    if (isDrawing && activeEditTool === 'draw') {
-      if (pdfContainerRef.current) {
-        const rect = pdfContainerRef.current.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        setCurrentDraw(draw => [...draw, { x, y }]);
-      }
-    }
-    if (moveMode && movingElement) {
-      const x = e.clientX - moveOffset.x;
-      const y = e.clientY - moveOffset.y;
-      if (movingElement.type === 'text') {
-        setTextElements(els =>
-          els.map(el =>
-            el.id === movingElement.id
-              ? { ...el, position: { x, y } }
-              : el
-          )
-        );
-      }
-      if (movingElement.type === 'highlight') {
-        setHighlightElements(els =>
-          els.map(el =>
-            el.id === movingElement.id
-              ? { ...el, x, y }
-              : el
-          )
-        );
-      }
-      if (movingElement.type === 'draw') {
-        // Calculate the delta from the original position
-        const deltaX = x - movingElement.start.x;
-        const deltaY = y - movingElement.start.y;
-        setDrawElements(els =>
-          els.map(el =>
-            el.id === movingElement.id
-              ? {
-                  ...el,
-                  // Move all points by the same delta, always from the original points
-                  points: movingElement.originalPoints.map(pt => ({ x: pt.x + deltaX, y: pt.y + deltaY }))
-                }
-              : el
-          )
-        );
-      }
-    }
   };
 
   const handleMouseUp = (e) => {
@@ -203,31 +184,13 @@ export default function Editor() {
         setHighlightStart(null);
       }
     }
-    if (isDrawing && activeEditTool === 'draw') {
-      setDrawElements([...drawElements, {
-        id: Date.now(),
-        page: pageNumber,
-        points: currentDraw,
-        color: drawColor,
-      }]);
-      setIsDrawing(false);
-      setCurrentDraw([]);
-    }
     if (moveMode && movingElement) {
       setMovingElement(null);
     }
   };
 
   const handleMouseDown = (e) => {
-    if (activeEditTool === 'draw') {
-      if (pdfContainerRef.current) {
-        const rect = pdfContainerRef.current.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        setIsDrawing(true);
-        setCurrentDraw([{ x, y }]);
-      }
-    }
+    // Draw tool removed: do nothing
   };
 
   const handleElementMouseDown = (type, id, e) => {
@@ -236,18 +199,14 @@ export default function Editor() {
     let el;
     if (type === 'text') el = textElements.find(t => t.id === id);
     if (type === 'highlight') el = highlightElements.find(h => h.id === id);
-    if (type === 'draw') el = drawElements.find(d => d.id === id);
     if (!el) return;
     let pos;
     if (type === 'text') pos = el.position;
     if (type === 'highlight') pos = { x: el.x, y: el.y };
-    if (type === 'draw') pos = el.points[0];
     setMovingElement({
       type,
       id,
       start: pos,
-      // Store original points for draw so we can always apply delta to the original
-      originalPoints: type === 'draw' ? el.points.map(pt => ({ ...pt })) : undefined
     });
     setMoveOffset({
       x: e.clientX - pos.x,
@@ -295,34 +254,12 @@ export default function Editor() {
     setHighlightElements(highlightElements.filter(el => el.id !== id));
   };
 
-  const handleDeleteDraw = (id) => {
-    setDrawElements(drawElements.filter(el => el.id !== id));
-  };
-
   const handlePdfAreaContextMenu = (e) => {
     e.preventDefault();
     setDeleteMode(false);
     setEraseMode(false);
     setActiveEditTool(null);
     setShowEditToolbar(false);
-  };
-
-  // Download PDF functionality
-  const handleDownloadPdf = () => {
-    // Use the original file if no edits, or render the edited PDF if edits exist
-    // For now, just download the original file
-    if (pdfFile) {
-      const url = URL.createObjectURL(pdfFile);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = pdfFile.name || 'document.pdf';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 100);
-    }
   };
 
   // Delete mode: delete the current page from the PDF
@@ -343,7 +280,32 @@ export default function Editor() {
       // Optionally clear annotations for deleted page
       setTextElements(textElements.filter(el => el.page !== pageNumber));
       setHighlightElements(highlightElements.filter(el => el.page !== pageNumber));
-      setDrawElements(drawElements.filter(el => el.page !== pageNumber));
+    };
+    reader.readAsArrayBuffer(pdfFile);
+  };
+
+  // Enhance PDF: Compress PDF (reduce file size while maintaining quality)
+  const handleEnhancePdf = () => {
+    if (!pdfFile) return;
+    setEnhanceStatus('Processing...');
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      try {
+        const { PDFDocument } = await import('pdf-lib');
+        const arrayBuffer = e.target.result;
+        const pdfDoc = await PDFDocument.load(arrayBuffer);
+        // Optionally: remove unused objects, compress streams
+        pdfDoc.setTitle('Enhanced PDF');
+        // Save with compression (pdf-lib compresses by default)
+        const newPdfBytes = await pdfDoc.save({ useObjectStreams: true });
+        const newFile = new File([newPdfBytes], pdfFile.name.replace(/\.pdf$/i, '') + '-enhanced.pdf', { type: 'application/pdf' });
+        setPdfFile(newFile);
+        setEnhanceStatus('PDF enhanced and compressed!');
+        setTimeout(() => setEnhanceStatus(''), 2000);
+      } catch (err) {
+        setEnhanceStatus('Enhancement failed.');
+        setTimeout(() => setEnhanceStatus(''), 2000);
+      }
     };
     reader.readAsArrayBuffer(pdfFile);
   };
@@ -377,262 +339,216 @@ export default function Editor() {
           </header>
           <main className="editor-main">
             {pdfFile ? (
-              <div 
-                className="pdfjs-preview-wrapper" 
-                ref={pdfContainerRef} 
-                onClick={handlePageClick}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseDown={handleMouseDown}
-                onContextMenu={handlePdfAreaContextMenu}
-                style={{ position: 'relative', userSelect: activeEditTool === 'highlight' ? 'none' : undefined }}
-              >
-                {/* Delete mode indicator */}
-                {deleteMode && (
-                  <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 20, background: '#ffeded', color: '#c00', padding: '6px 12px', borderRadius: 4, fontWeight: 600, boxShadow: '0 1px 4px #0002' }}>
-                    Delete Mode: Click an annotation to remove it
-                  </div>
-                )}
-                {/* Erase mode indicator */}
-                {eraseMode && (
-                  <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 20, background: '#e0f7fa', color: '#00796b', padding: '6px 12px', borderRadius: 4, fontWeight: 600, boxShadow: '0 1px 4px #0002' }}>
-                    Erase Mode: Click a text, highlight, drawing, or image to erase it
-                  </div>
-                )}
-                {/* Move mode indicator */}
-                {moveMode && (
-                  <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 20, background: '#e0e7ff', color: '#3730a3', padding: '6px 12px', borderRadius: 4, fontWeight: 600, boxShadow: '0 1px 4px #0002' }}>
-                    Move Mode: Drag and drop text, highlight, or drawing
-                  </div>
-                )}
-                {/* Tool color pickers */}
-                {activeEditTool === 'addText' && (
-                  <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, background: '#fff', padding: 6, borderRadius: 4, boxShadow: '0 1px 4px #0002' }}>
-                    <label style={{ fontSize: 12, marginRight: 6 }}>Text Color:</label>
-                    <input
-                      type="color"
-                      value={textColor}
-                      onChange={e => setTextColor(e.target.value)}
-                      style={{ verticalAlign: 'middle' }}
-                    />
-                  </div>
-                )}
-                {activeEditTool === 'highlight' && (
-                  <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, background: '#fff', padding: 6, borderRadius: 4, boxShadow: '0 1px 4px #0002' }}>
-                    <label style={{ fontSize: 12, marginRight: 6 }}>Highlight Color:</label>
-                    <input
-                      type="color"
-                      value={highlightColor}
-                      onChange={e => setHighlightColor(e.target.value)}
-                      style={{ verticalAlign: 'middle' }}
-                    />
-                  </div>
-                )}
-                {activeEditTool === 'draw' && (
-                  <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, background: '#fff', padding: 6, borderRadius: 4, boxShadow: '0 1px 4px #0002' }}>
-                    <label style={{ fontSize: 12, marginRight: 6 }}>Draw Color:</label>
-                    <input
-                      type="color"
-                      value={drawColor}
-                      onChange={e => setDrawColor(e.target.value)}
-                      style={{ verticalAlign: 'middle' }}
-                    />
-                  </div>
-                )}
-                <Document
-                  file={pdfFile}
-                  onLoadSuccess={onDocumentLoadSuccess}
-                  loading={<div className="pdf-placeholder">Loading PDF...</div>}
-                  className="pdfjs-document"
+              <>
+                <div 
+                  className="pdfjs-preview-wrapper" 
+                  ref={pdfContainerRef} 
+                  onClick={handlePageClick}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseDown={handleMouseDown}
+                  onContextMenu={handlePdfAreaContextMenu}
+                  style={{ 
+                    position: 'relative', 
+                    userSelect: activeEditTool === 'highlight' ? 'none' : undefined,
+                  }}
                 >
-                  <Page pageNumber={pageNumber} className="pdfjs-page" />
-                </Document>
-
-                {/* Render highlights */}
-                {highlightElements.filter(el => el.page === pageNumber).map(el => (
-                  <div
-                    key={el.id}
-                    style={{
-                      position: 'absolute',
-                      left: el.x,
-                      top: el.y,
-                      width: el.width,
-                      height: el.height,
-                      background: el.color,
-                      opacity: 0.4,
-                      pointerEvents: (deleteMode || eraseMode || moveMode) ? 'auto' : 'none',
-                      borderRadius: 2,
-                      cursor: moveMode ? 'move' : (deleteMode || eraseMode) ? 'pointer' : 'default',
-                      border: deleteMode ? '2px solid #c00' : eraseMode ? '2px solid #00796b' : moveMode ? '2px solid #3730a3' : 'none',
-                      boxSizing: 'border-box',
-                    }}
-                    onMouseDown={moveMode ? (e) => handleElementMouseDown('highlight', el.id, e) : undefined}
-                    onClick={
-                      deleteMode || eraseMode
-                        ? () => handleDeleteHighlight(el.id)
-                        : undefined
-                    }
-                    title={
-                      moveMode
-                        ? 'Drag to move highlight'
-                        : deleteMode
-                          ? 'Click to delete highlight'
-                          : eraseMode
-                            ? 'Click to erase highlight'
-                          : ''
-                    }
-                  />
-                ))}
-                {/* Render highlight preview while drawing */}
-                {isHighlighting && highlightStart && highlightStart.x2 !== undefined && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      left: Math.min(highlightStart.x, highlightStart.x2),
-                      top: Math.min(highlightStart.y, highlightStart.y2),
-                      width: Math.abs(highlightStart.x2 - highlightStart.x),
-                      height: Math.abs(highlightStart.y2 - highlightStart.y),
-                      background: highlightColor,
-                      opacity: 0.3,
-                      pointerEvents: 'none',
-                      borderRadius: 2,
-                    }}
-                  />
-                )}
-
-                {/* Render drawings */}
-                {drawElements.filter(el => el.page === pageNumber).map(el => (
-                  <svg
-                    key={el.id}
-                    style={{
-                      position: 'absolute',
-                      left: 0,
-                      top: 0,
-                      width: '100%',
-                      height: '100%',
-                      pointerEvents: (deleteMode || eraseMode || moveMode) ? 'auto' : 'none',
-                      cursor: moveMode ? 'move' : (deleteMode || eraseMode) ? 'pointer' : 'default',
-                      zIndex: 2, // <-- Remove dynamic zIndex, use a constant for all drawings
-                      border: moveMode ? '2px solid #3730a3' : undefined,
-                    }}
-                    onMouseDown={moveMode ? (e) => { e.stopPropagation(); handleElementMouseDown('draw', el.id, e); } : undefined}
-                    onClick={
-                      deleteMode || eraseMode
-                        ? () => handleDeleteDraw(el.id)
-                        : undefined
-                    }
-                    title={
-                      moveMode
-                        ? 'Drag to move drawing'
-                        : deleteMode
-                          ? 'Click to delete drawing'
-                          : eraseMode
-                            ? 'Click to erase drawing'
-                          : ''
-                    }
+                  {/* Delete mode indicator */}
+                  {deleteMode && (
+                    <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 20, background: '#ffeded', color: '#c00', padding: '6px 12px', borderRadius: 4, fontWeight: 600, boxShadow: '0 1px 4px #0002' }}>
+                      Delete Mode: Click an annotation to remove it
+                    </div>
+                  )}
+                  {/* Erase mode indicator */}
+                  {eraseMode && (
+                    <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 20, background: '#e0f7fa', color: '#00796b', padding: '6px 12px', borderRadius: 4, fontWeight: 600, boxShadow: '0 1px 4px #0002' }}>
+                      Erase Mode: Click a text, highlight, drawing, or image to erase it
+                    </div>
+                  )}
+                  {/* Move mode indicator */}
+                  {moveMode && (
+                    <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 20, background: '#e0e7ff', color: '#3730a3', padding: '6px 12px', borderRadius: 4, fontWeight: 600, boxShadow: '0 1px 4px #0002' }}>
+                      Move Mode: Drag and drop text, highlight, or drawing
+                    </div>
+                  )}
+                  {/* Tool color pickers */}
+                  {activeEditTool === 'addText' && (
+                    <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, background: '#fff', padding: 6, borderRadius: 4, boxShadow: '0 1px 4px #0002' }}>
+                      <label style={{ fontSize: 12, marginRight: 6 }}>Text Color:</label>
+                      <input
+                        type="color"
+                        value={textColor}
+                        onChange={e => setTextColor(e.target.value)}
+                        style={{ verticalAlign: 'middle' }}
+                      />
+                    </div>
+                  )}
+                  {activeEditTool === 'highlight' && (
+                    <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, background: '#fff', padding: 6, borderRadius: 4, boxShadow: '0 1px 4px #0002' }}>
+                      <label style={{ fontSize: 12, marginRight: 6 }}>Highlight Color:</label>
+                      <input
+                        type="color"
+                        value={highlightColor}
+                        onChange={e => setHighlightColor(e.target.value)}
+                        style={{ verticalAlign: 'middle' }}
+                      />
+                    </div>
+                  )}
+                  <Document
+                    file={pdfFile}
+                    onLoadSuccess={onDocumentLoadSuccess}
+                    loading={<div className="pdf-placeholder">Loading PDF...</div>}
+                    className="pdfjs-document"
                   >
-                    <polyline
-                      points={el.points.map(p => `${p.x},${p.y}`).join(' ')}
-                      fill="none"
-                      stroke={el.color}
-                      strokeWidth={2}
-                      strokeLinejoin="round"
-                      strokeLinecap="round"
+                    <Page pageNumber={pageNumber} className="pdfjs-page" />
+                  </Document>
+
+                  {/* Render highlights */}
+                  {highlightElements.filter(el => el.page === pageNumber).map(el => (
+                    <div
+                      key={el.id}
+                      style={{
+                        position: 'absolute',
+                        left: el.x,
+                        top: el.y,
+                        width: el.width,
+                        height: el.height,
+                        background: el.color,
+                        opacity: 0.4,
+                        pointerEvents: (deleteMode || eraseMode || moveMode) ? 'auto' : 'none',
+                        borderRadius: 2,
+                        cursor: moveMode ? 'move' : (deleteMode || eraseMode) ? 'pointer' : 'default',
+                        border: deleteMode ? '2px solid #c00' : eraseMode ? '2px solid #00796b' : moveMode ? '2px solid #3730a3' : 'none',
+                        boxSizing: 'border-box',
+                      }}
+                      onMouseDown={moveMode ? (e) => handleElementMouseDown('highlight', el.id, e) : undefined}
+                      onClick={
+                        deleteMode || eraseMode
+                          ? () => handleDeleteHighlight(el.id)
+                          : undefined
+                      }
+                      title={
+                        moveMode
+                          ? 'Drag to move highlight'
+                          : deleteMode
+                            ? 'Click to delete highlight'
+                            : eraseMode
+                              ? 'Click to erase highlight'
+                            : ''
+                      }
                     />
-                    {(deleteMode || eraseMode || moveMode) && (
-                      <rect x="0" y="0" width="100%" height="100%" fill="transparent" />
-                    )}
-                  </svg>
-                ))}
-                {/* Render current drawing */}
-                {isDrawing && currentDraw.length > 1 && (
-                  <svg
-                    style={{
-                      position: 'absolute',
-                      left: 0,
-                      top: 0,
-                      width: '100%',
-                      height: '100%',
-                      pointerEvents: 'none',
-                    }}
-                  >
-                    <polyline
-                      points={currentDraw.map(p => `${p.x},${p.y}`).join(' ')}
-                      fill="none"
-                      stroke={drawColor}
-                      strokeWidth={2}
-                      strokeLinejoin="round"
-                      strokeLinecap="round"
+                  ))}
+                  {/* Render highlight preview while drawing */}
+                  {isHighlighting && highlightStart && highlightStart.x2 !== undefined && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: Math.min(highlightStart.x, highlightStart.x2),
+                        top: Math.min(highlightStart.y, highlightStart.y2),
+                        width: Math.abs(highlightStart.x2 - highlightStart.x),
+                        height: Math.abs(highlightStart.y2 - highlightStart.y),
+                        background: highlightColor,
+                        opacity: 0.3,
+                        pointerEvents: 'none',
+                        borderRadius: 2,
+                      }}
                     />
-                  </svg>
-                )}
+                  )}
 
-                {/* Render text elements */}
-                {textElements.filter(el => el.page === pageNumber).map(element => (
-                  <div 
-                    key={element.id}
-                    style={{
-                      position: 'absolute',
-                      left: `${element.position.x}px`,
-                      top: `${element.position.y}px`,
-                      color: element.color || '#000',
-                      pointerEvents: (deleteMode || eraseMode || moveMode) ? 'auto' : 'none',
-                      background: 'transparent',
-                      fontSize: 16,
-                      cursor: moveMode ? 'move' : (deleteMode || eraseMode) ? 'pointer' : 'default',
-                      border: deleteMode ? '1px dashed #c00' : eraseMode ? '1px dashed #00796b' : moveMode ? '1px dashed #3730a3' : 'none',
-                    }}
-                    onMouseDown={moveMode ? (e) => handleElementMouseDown('text', element.id, e) : undefined}
-                    onClick={
-                      deleteMode || eraseMode
-                        ? () => handleDeleteText(element.id)
-                        : undefined
-                    }
-                    title={
-                      moveMode
-                        ? 'Drag to move text'
-                        : deleteMode
-                          ? 'Click to delete text'
-                          : eraseMode
-                            ? 'Click to erase text'
-                          : ''
-                    }
-                  >
-                    {element.content}
+                  {/* Render text elements */}
+                  {textElements.filter(el => el.page === pageNumber).map(element => (
+                    <div 
+                      key={element.id}
+                      style={{
+                        position: 'absolute',
+                        left: `${element.position.x}px`,
+                        top: `${element.position.y}px`,
+                        color: element.color || '#000',
+                        pointerEvents: (deleteMode || eraseMode || moveMode) ? 'auto' : 'none',
+                        background: 'transparent',
+                        fontSize: 16,
+                        cursor: moveMode ? 'move' : (deleteMode || eraseMode) ? 'pointer' : 'default',
+                        border: deleteMode ? '1px dashed #c00' : eraseMode ? '1px dashed #00796b' : moveMode ? '1px dashed #3730a3' : 'none',
+                      }}
+                      onMouseDown={moveMode ? (e) => handleElementMouseDown('text', element.id, e) : undefined}
+                      onClick={
+                        deleteMode || eraseMode
+                          ? () => handleDeleteText(element.id)
+                          : undefined
+                      }
+                      title={
+                        moveMode
+                          ? 'Drag to move text'
+                          : deleteMode
+                            ? 'Click to delete text'
+                            : eraseMode
+                              ? 'Click to erase text'
+                            : ''
+                      }
+                    >
+                      {element.content}
+                    </div>
+                  ))}
+                  {isAddingText && (
+                    <input
+                      type="text"
+                      autoFocus
+                      style={{
+                        position: 'absolute',
+                        left: `${newTextPosition.x}px`,
+                        top: `${newTextPosition.y}px`,
+                        minWidth: '100px',
+                        color: textColor,
+                      }}
+                      value={newTextContent}
+                      onChange={handleTextInputChange}
+                      onKeyDown={handleTextInputKeyDown}
+                      onBlur={handleTextInputBlur}
+                    />
+                  )}
+
+                  <div className="pdfjs-controls">
+                    <button
+                      onClick={() => handlePageChange(Math.max(1, pageNumber - 1))}
+                      disabled={pageNumber <= 1}
+                    >Prev</button>
+                    <span>Page {pageNumber} of {numPages}</span>
+                    <button
+                      onClick={() => handlePageChange(Math.min(numPages, pageNumber + 1))}
+                      disabled={pageNumber >= numPages}
+                    >Next</button>
                   </div>
-                ))}
-                {isAddingText && (
-                  <input
-                    type="text"
-                    autoFocus
-                    style={{
-                      position: 'absolute',
-                      left: `${newTextPosition.x}px`,
-                      top: `${newTextPosition.y}px`,
-                      minWidth: '100px',
-                      color: textColor,
-                    }}
-                    value={newTextContent}
-                    onChange={handleTextInputChange}
-                    onKeyDown={handleTextInputKeyDown}
-                    onBlur={handleTextInputBlur}
-                  />
-                )}
-
-                <div className="pdfjs-controls">
-                  <button
-                    onClick={() => handlePageChange(Math.max(1, pageNumber - 1))}
-                    disabled={pageNumber <= 1}
-                  >Prev</button>
-                  <span>Page {pageNumber} of {numPages}</span>
-                  <button
-                    onClick={() => handlePageChange(Math.min(numPages, pageNumber + 1))}
-                    disabled={pageNumber >= numPages}
-                  >Next</button>
                 </div>
-              </div>
+              </>
             ) : (
               <div className="pdf-placeholder">PDF Preview/Editor Area</div>
+            )}
+            {/* Download popup menu */}
+            {showDownloadPopup && (
+              <div style={{
+                position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', zIndex: 1000,
+                background: 'rgba(30, 16, 60, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <div style={{
+                  background: '#fff', borderRadius: 12, boxShadow: '0 4px 32px #0002', padding: 32, minWidth: 320,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center',
+                }}>
+                  <h3 style={{marginBottom: 16, color: '#6c2bd7'}}>Download PDF</h3>
+                  <input
+                    type="text"
+                    value={downloadFileName}
+                    onChange={e => setDownloadFileName(e.target.value)}
+                    style={{
+                      padding: '8px 12px', fontSize: 16, borderRadius: 6, border: '1px solid #9d4edd', width: '100%', marginBottom: 18,
+                    }}
+                    autoFocus
+                  />
+                  <div style={{display: 'flex', gap: 16}}>
+                    <button onClick={handleDownloadConfirm} style={{background: '#9d4edd', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 600, fontSize: 15, cursor: 'pointer'}}>Download</button>
+                    <button onClick={handleDownloadCancel} style={{background: '#eee', color: '#3730a3', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 600, fontSize: 15, cursor: 'pointer'}}>Cancel</button>
+                  </div>
+                </div>
+              </div>
             )}
           </main>
           {showEditToolbar ? (
@@ -651,12 +567,18 @@ export default function Editor() {
                     if (tool.label === 'Edit') setShowEditToolbar(true);
                     if (tool.label === 'Delete') handleDeletePage();
                     if (tool.label === 'Download') handleDownloadPdf();
+                    if (tool.label === 'Enhance') handleEnhancePdf();
                   }}
                 >
                   <div className="tool-icon">{tool.icon}</div>
                   <div className="tool-label">{tool.label}</div>
                 </div>
               ))}
+              {enhanceStatus && (
+                <div style={{ position: 'absolute', bottom: 60, left: '50%', transform: 'translateX(-50%)', background: '#fff', color: '#6c2bd7', borderRadius: 8, padding: '10px 24px', boxShadow: '0 2px 12px #0002', fontWeight: 600, zIndex: 100 }}>
+                  {enhanceStatus}
+                </div>
+              )}
             </footer>
           )}
         </>
