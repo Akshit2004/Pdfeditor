@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { FaFileUpload, FaEdit, FaTrash, FaDownload, FaMagic, FaSyncAlt } from 'react-icons/fa';
+import { FaFileUpload, FaEdit, FaTrash, FaDownload, FaSyncAlt } from 'react-icons/fa';
 import { pdfjs, Document, Page } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
@@ -9,7 +9,6 @@ import EditToolbar from './EditToolbar';
 
 const TOOLBAR_TOOLS = [
   { icon: <FaEdit />, label: 'Edit' },
-  { icon: <FaMagic />, label: 'Enhance' },
   { icon: <FaTrash />, label: 'Delete' },
   { icon: <FaDownload />, label: 'Download' },
   { icon: <FaSyncAlt />, label: 'Rotate' }, // Add Rotate tool
@@ -52,7 +51,6 @@ export default function Editor() {
   const [movingElement, setMovingElement] = useState(null);
   const [moveOffset, setMoveOffset] = useState({ x: 0, y: 0 });
   const pdfContainerRef = useRef(null);
-  const [enhanceStatus, setEnhanceStatus] = useState('');
   const [bwFilter, setBwFilter] = useState(false);
   const [isProcessingDownload, setIsProcessingDownload] = useState(false);
 
@@ -65,6 +63,53 @@ export default function Editor() {
   const [pagePreviews, setPagePreviews] = useState([]); // For reorder modal
   const [rotations, setRotations] = useState({}); // {pageIdx: rotation}
   const [dragOverIdx, setDragOverIdx] = useState(null);
+  const [isProcessingReorder, setIsProcessingReorder] = useState(false);
+  const [pendingReorder, setPendingReorder] = useState(false);
+
+  const [undoStack, setUndoStack] = useState([]); // For revert/undo
+
+  // Touch drag state for mobile reorder
+  const [touchDragIdx, setTouchDragIdx] = useState(null);
+  const [touchOverIdx, setTouchOverIdx] = useState(null);
+
+  const handleTouchStart = (idx) => (e) => {
+    setTouchDragIdx(idx);
+    setTouchOverIdx(idx);
+  };
+  const handleTouchMove = (idx) => (e) => {
+    if (touchDragIdx === null) return;
+    const touch = e.touches[0];
+    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!target) return;
+    const thumb = target.closest('.reorder-page-thumb');
+    if (!thumb) return;
+    const overIdx = parseInt(thumb.getAttribute('data-idx'), 10);
+    if (overIdx !== touchOverIdx) setTouchOverIdx(overIdx);
+  };
+  const handleTouchEnd = (idx) => (e) => {
+    if (touchDragIdx !== null && touchOverIdx !== null && touchDragIdx !== touchOverIdx) {
+      const newOrder = [...pageOrder];
+      const [moved] = newOrder.splice(touchDragIdx, 1);
+      newOrder.splice(touchOverIdx, 0, moved);
+      setPageOrder(newOrder);
+    }
+    setTouchDragIdx(null);
+    setTouchOverIdx(null);
+  };
+
+  // Helper to push current PDF to undo stack before destructive changes
+  const pushToUndoStack = () => {
+    if (pdfFile) setUndoStack(stack => [...stack, pdfFile]);
+  };
+
+  const handleRevert = () => {
+    if (undoStack.length > 0) {
+      const prev = undoStack[undoStack.length - 1];
+      setPdfFile(prev);
+      setUndoStack(stack => stack.slice(0, -1));
+      // Optionally reset page/annotations if needed
+    }
+  };
 
   const handleDownloadPdf = () => {
     if (!pdfFile) return;
@@ -339,6 +384,7 @@ export default function Editor() {
   // Delete mode: delete the current page from the PDF
   const handleDeletePage = () => {
     if (!pdfFile || !numPages || numPages <= 1) return;
+    pushToUndoStack();
     // Read the PDF as ArrayBuffer and use PDF-lib to remove the page
     const reader = new FileReader();
     reader.onload = async function(e) {
@@ -358,19 +404,9 @@ export default function Editor() {
     reader.readAsArrayBuffer(pdfFile);
   };
 
-  // Enhance PDF: Compress PDF (reduce file size while maintaining quality)
-  const handleEnhancePdf = () => {
-    if (!pdfFile) return;
-    setEnhanceStatus('Processing...');
-    setBwFilter(true); // Apply black and white filter visually
-    setTimeout(() => {
-      setEnhanceStatus('PDF enhanced and compressed!');
-      setTimeout(() => setEnhanceStatus(''), 2000);
-    }, 1200);
-  };
-
   // Add handler for toolbar rotate button
   const handleRotateCurrentPage = () => {
+    pushToUndoStack();
     setRotations(prev => ({
       ...prev,
       [pageNumber - 1]: ((prev[pageNumber - 1] || 0) + 90) % 360
@@ -420,28 +456,43 @@ export default function Editor() {
     setDragOverIdx(null);
   };
 
-  const handleReorderConfirm = async () => {
-    if (!pdfFile || pageOrder.length !== numPages) return;
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-      const { PDFDocument } = await import('pdf-lib');
-      const arrayBuffer = e.target.result;
-      const pdfDoc = await PDFDocument.load(arrayBuffer);
-      const newPdf = await PDFDocument.create();
-      for (const idx of pageOrder) {
-        const [copied] = await newPdf.copyPages(pdfDoc, [idx]);
-        if (rotations[idx]) copied.setRotation(rotations[idx]);
-        newPdf.addPage(copied);
-      }
-      const newPdfBytes = await newPdf.save();
-      const newFile = new File([newPdfBytes], pdfFile.name || 'document.pdf', { type: 'application/pdf' });
-      setPdfFile(newFile);
-      setShowReorderModal(false);
-      setPageNumber(1);
-      setRotations({});
-    };
-    reader.readAsArrayBuffer(pdfFile);
+  const handleReorderConfirm = () => {
+    setShowReorderModal(false); // Hide modal first
+    setPendingReorder(true);   // Trigger reorder after modal unmounts
   };
+
+  useEffect(() => {
+    if (pendingReorder && !showReorderModal) {
+      (async () => {
+        if (!pdfFile || pageOrder.length !== numPages) {
+          setPendingReorder(false);
+          return;
+        }
+        pushToUndoStack();
+        setIsProcessingReorder(true);
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+          const { PDFDocument } = await import('pdf-lib');
+          const arrayBuffer = e.target.result;
+          const pdfDoc = await PDFDocument.load(arrayBuffer);
+          const newPdf = await PDFDocument.create();
+          for (const idx of pageOrder) {
+            const [copied] = await newPdf.copyPages(pdfDoc, [idx]);
+            if (rotations[idx]) copied.setRotation(rotations[idx]);
+            newPdf.addPage(copied);
+          }
+          const newPdfBytes = await newPdf.save();
+          const newFile = new File([newPdfBytes], pdfFile.name || 'document.pdf', { type: 'application/pdf' });
+          setPdfFile(newFile);
+          setPageNumber(1);
+          setRotations({});
+          setIsProcessingReorder(false);
+          setPendingReorder(false);
+        };
+        reader.readAsArrayBuffer(pdfFile);
+      })();
+    }
+  }, [pendingReorder, showReorderModal]);
 
   return (
     <div className="editor-bg">
@@ -470,6 +521,28 @@ export default function Editor() {
           <header className="editor-header">
             <span className="editor-title-animated">PDF Editor</span>
           </header>
+          {/* Page navigation bar above the PDF preview (not above toolbar) */}
+          {!showModal && pdfFile && numPages && (
+            <div className="editor-page-nav">
+              <button
+                className="page-nav-btn"
+                onClick={() => handlePageChange(pageNumber - 1)}
+                disabled={pageNumber <= 1}
+              >
+                Prev
+              </button>
+              <span className="page-nav-info">
+                Page {pageNumber} of {numPages}
+              </span>
+              <button
+                className="page-nav-btn"
+                onClick={() => handlePageChange(pageNumber + 1)}
+                disabled={pageNumber >= numPages}
+              >
+                Next
+              </button>
+            </div>
+          )}
           <main className="editor-main">
             {pdfFile ? (
               <>
@@ -481,49 +554,43 @@ export default function Editor() {
                   onMouseUp={handleMouseUp}
                   onMouseDown={handleMouseDown}
                   onContextMenu={handlePdfAreaContextMenu}
-                  style={{ 
-                    position: 'relative', 
-                    userSelect: activeEditTool === 'highlight' ? 'none' : undefined,
-                  }}
                 >
                   {/* Delete mode indicator */}
                   {deleteMode && (
-                    <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 20, background: '#ffeded', color: '#c00', padding: '6px 12px', borderRadius: 4, fontWeight: 600, boxShadow: '0 1px 4px #0002' }}>
+                    <div className="editor-indicator delete-mode">
                       Delete Mode: Click an annotation to remove it
                     </div>
                   )}
                   {/* Erase mode indicator */}
                   {eraseMode && (
-                    <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 20, background: '#e0f7fa', color: '#00796b', padding: '6px 12px', borderRadius: 4, fontWeight: 600, boxShadow: '0 1px 4px #0002' }}>
+                    <div className="editor-indicator erase-mode">
                       Erase Mode: Click a text, highlight, drawing, or image to erase it
                     </div>
                   )}
                   {/* Move mode indicator */}
                   {moveMode && (
-                    <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 20, background: '#e0e7ff', color: '#3730a3', padding: '6px 12px', borderRadius: 4, fontWeight: 600, boxShadow: '0 1px 4px #0002' }}>
+                    <div className="editor-indicator move-mode">
                       Move Mode: Drag and drop text, highlight, or drawing
                     </div>
                   )}
                   {/* Tool color pickers */}
                   {activeEditTool === 'addText' && (
-                    <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, background: '#fff', padding: 6, borderRadius: 4, boxShadow: '0 1px 4px #0002' }}>
-                      <label style={{ fontSize: 12, marginRight: 6 }}>Text Color:</label>
+                    <div className="color-picker text-color-picker">
+                      <label>Text Color:</label>
                       <input
                         type="color"
                         value={textColor}
                         onChange={e => setTextColor(e.target.value)}
-                        style={{ verticalAlign: 'middle' }}
                       />
                     </div>
                   )}
                   {activeEditTool === 'highlight' && (
-                    <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, background: '#fff', padding: 6, borderRadius: 4, boxShadow: '0 1px 4px #0002' }}>
-                      <label style={{ fontSize: 12, marginRight: 6 }}>Highlight Color:</label>
+                    <div className="color-picker highlight-color-picker">
+                      <label>Highlight Color:</label>
                       <input
                         type="color"
                         value={highlightColor}
                         onChange={e => setHighlightColor(e.target.value)}
-                        style={{ verticalAlign: 'middle' }}
                       />
                     </div>
                   )}
@@ -540,19 +607,13 @@ export default function Editor() {
                   {highlightElements.filter(el => el.page === pageNumber).map(el => (
                     <div
                       key={el.id}
+                      className={`pdf-highlight${moveMode ? ' move' : ''}${deleteMode ? ' delete' : ''}${eraseMode ? ' erase' : ''}`}
                       style={{
-                        position: 'absolute',
                         left: el.x,
                         top: el.y,
                         width: el.width,
                         height: el.height,
                         background: el.color,
-                        opacity: 0.4,
-                        pointerEvents: (deleteMode || eraseMode || moveMode) ? 'auto' : 'none',
-                        borderRadius: 2,
-                        cursor: moveMode ? 'move' : (deleteMode || eraseMode) ? 'pointer' : 'default',
-                        border: deleteMode ? '2px solid #c00' : eraseMode ? '2px solid #00796b' : moveMode ? '2px solid #3730a3' : 'none',
-                        boxSizing: 'border-box',
                       }}
                       onMouseDown={moveMode ? (e) => handleElementMouseDown('highlight', el.id, e) : undefined}
                       onClick={
@@ -575,16 +636,13 @@ export default function Editor() {
                   {isHighlighting && highlightStart && highlightStart.x2 !== undefined && (
                     <div
                       style={{
-                        position: 'absolute',
                         left: Math.min(highlightStart.x, highlightStart.x2),
                         top: Math.min(highlightStart.y, highlightStart.y2),
                         width: Math.abs(highlightStart.x2 - highlightStart.x),
                         height: Math.abs(highlightStart.y2 - highlightStart.y),
                         background: highlightColor,
-                        opacity: 0.3,
-                        pointerEvents: 'none',
-                        borderRadius: 2,
                       }}
+                      className="pdf-highlight highlight-preview"
                     />
                   )}
 
@@ -592,16 +650,11 @@ export default function Editor() {
                   {textElements.filter(el => el.page === pageNumber).map(element => (
                     <div 
                       key={element.id}
+                      className={`pdf-text${moveMode ? ' move' : ''}${deleteMode ? ' delete' : ''}${eraseMode ? ' erase' : ''}`}
                       style={{
-                        position: 'absolute',
                         left: `${element.position.x}px`,
                         top: `${element.position.y}px`,
                         color: element.color || '#000',
-                        pointerEvents: (deleteMode || eraseMode || moveMode) ? 'auto' : 'none',
-                        background: 'transparent',
-                        fontSize: 16,
-                        cursor: moveMode ? 'move' : (deleteMode || eraseMode) ? 'pointer' : 'default',
-                        border: deleteMode ? '1px dashed #c00' : eraseMode ? '1px dashed #00796b' : moveMode ? '1px dashed #3730a3' : 'none',
                       }}
                       onMouseDown={moveMode ? (e) => handleElementMouseDown('text', element.id, e) : undefined}
                       onClick={
@@ -626,11 +679,10 @@ export default function Editor() {
                     <input
                       type="text"
                       autoFocus
+                      className="pdf-text-input"
                       style={{
-                        position: 'absolute',
                         left: `${newTextPosition.x}px`,
                         top: `${newTextPosition.y}px`,
-                        minWidth: '100px',
                         color: textColor,
                       }}
                       value={newTextContent}
@@ -639,18 +691,6 @@ export default function Editor() {
                       onBlur={handleTextInputBlur}
                     />
                   )}
-
-                  <div className="pdfjs-controls">
-                    <button
-                      onClick={() => handlePageChange(Math.max(1, pageNumber - 1))}
-                      disabled={pageNumber <= 1}
-                    >Prev</button>
-                    <span>Page {pageNumber} of {numPages}</span>
-                    <button
-                      onClick={() => handlePageChange(Math.min(numPages, pageNumber + 1))}
-                      disabled={pageNumber >= numPages}
-                    >Next</button>
-                  </div>
                 </div>
               </>
             ) : (
@@ -658,55 +698,48 @@ export default function Editor() {
             )}
             {/* Download popup menu */}
             {showDownloadPopup && (
-              <div style={{
-                position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', zIndex: 1000,
-                background: 'rgba(30, 16, 60, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <div style={{
-                  background: '#fff', borderRadius: 12, boxShadow: '0 4px 32px #0002', padding: 32, minWidth: 320,
-                  display: 'flex', flexDirection: 'column', alignItems: 'center',
-                }}>
-                  <h3 style={{marginBottom: 16, color: '#6c2bd7'}}>Download PDF</h3>
+              <div className="editor-modal-bg">
+                <div className="editor-modal download-modal">
+                  <h3>Download PDF</h3>
                   <input
                     type="text"
                     value={downloadFileName}
                     onChange={e => setDownloadFileName(e.target.value)}
-                    style={{
-                      padding: '8px 12px', fontSize: 16, borderRadius: 6, border: '1px solid #9d4edd', width: '100%', marginBottom: 18,
-                    }}
+                    className="editor-modal-input"
                     autoFocus
                   />
-                  <div style={{display: 'flex', gap: 16}}>
-                    <button onClick={handleDownloadConfirm} style={{background: '#9d4edd', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 600, fontSize: 15, cursor: isProcessingDownload ? 'not-allowed' : 'pointer'}} disabled={isProcessingDownload}>
+                  <div className="editor-modal-btns">
+                    <button onClick={handleDownloadConfirm} className="editor-modal-btn confirm" disabled={isProcessingDownload}>
                       {isProcessingDownload ? 'Processing...' : 'Download'}
                     </button>
-                    <button onClick={handleDownloadCancel} style={{background: '#eee', color: '#3730a3', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 600, fontSize: 15, cursor: isProcessingDownload ? 'not-allowed' : 'pointer'}} disabled={isProcessingDownload}>Cancel</button>
+                    <button onClick={handleDownloadCancel} className="editor-modal-btn cancel" disabled={isProcessingDownload}>Cancel</button>
                   </div>
-                  {isProcessingDownload && <div style={{marginTop:16, color:'#6c2bd7', fontWeight:600}}>Generating B&W PDF...</div>}
+                  {isProcessingDownload && <div className="editor-modal-status">Generating B&W PDF...</div>}
                 </div>
               </div>
             )}
             {/* Reorder modal */}
-            {showReorderModal && (
-              <div style={{position:'fixed',left:0,top:0,width:'100vw',height:'100vh',zIndex:1000,background:'rgba(30,16,60,0.25)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                <div style={{background:'#fff',borderRadius:12,boxShadow:'0 4px 32px #0002',padding:32,minWidth:340,maxWidth:600}}>
-                  <h3 style={{marginBottom:16,color:'#6c2bd7'}}>Reorder Pages</h3>
-                  <div style={{display:'flex',gap:12,overflowX:'auto',marginBottom:18}}>
+            {showReorderModal && !isProcessingReorder && !pendingReorder && (
+              <div className="editor-modal-bg">
+                <div className="editor-modal reorder-modal">
+                  <h3>Reorder Pages</h3>
+                  <div className="reorder-pages-list">
                     {pageOrder.map((pageIdx, i) => (
                       <div key={pageIdx}
                         draggable
+                        data-idx={i}
                         onDragStart={handleDragStart(i)}
                         onDrop={handleDrop(i)}
-                        onDragOver={handleDragOver}
+                        onDragOver={e => { e.preventDefault(); handleDragOver(e); }}
                         onDragEnter={handleDragEnter(i)}
+                        onDragLeave={handleDragEnd}
                         onDragEnd={handleDragEnd}
-                        style={{
-                          border: dragOverIdx === i ? '3px dashed #6a11cb' : '2px solid #9d4edd',
-                          borderRadius:6,padding:4,background:'#f8f6ff',minWidth:80,textAlign:'center',cursor:'grab',position:'relative',
-                          boxShadow: dragOverIdx === i ? '0 0 0 4px #c77dff44' : undefined
-                        }}
+                        onTouchStart={handleTouchStart(i)}
+                        onTouchMove={handleTouchMove(i)}
+                        onTouchEnd={handleTouchEnd(i)}
+                        className={`reorder-page-thumb${dragOverIdx === i || touchOverIdx === i ? ' drag-over' : ''}`}
                       >
-                        <div style={{width:60,height:80,margin:'0 auto',background:'#eee',borderRadius:4,overflow:'hidden',position:'relative'}}>
+                        <div className="reorder-page-preview">
                           <Document file={pdfFile} loading={null}>
                             <Page
                               pageNumber={pageIdx+1}
@@ -719,19 +752,28 @@ export default function Editor() {
                             />
                           </Document>
                         </div>
-                        <span style={{fontWeight:600,fontSize:13,display:'block',marginTop:4}}>Page {pageIdx+1}</span>
-                        <button onClick={() => handleRotatePage(pageIdx)} style={{marginTop:2,fontSize:11,padding:'2px 8px',borderRadius:4,border:'1px solid #9d4edd',background:'#f3eaff',color:'#6c2bd7',cursor:'pointer'}}>Rotate</button>
+                        <span className="reorder-page-label">Page {pageIdx+1}</span>
+                        <button onClick={() => handleRotatePage(pageIdx)} className="reorder-page-rotate">Rotate</button>
                       </div>
                     ))}
                   </div>
-                  <div style={{display:'flex',gap:16,justifyContent:'center'}}>
-                    <button onClick={handleReorderConfirm} style={{background:'#9d4edd',color:'#fff',border:'none',borderRadius:6,padding:'8px 18px',fontWeight:600,fontSize:15,cursor:'pointer'}}>Confirm</button>
-                    <button onClick={()=>setShowReorderModal(false)} style={{background:'#eee',color:'#3730a3',border:'none',borderRadius:6,padding:'8px 18px',fontWeight:600,fontSize:15,cursor:'pointer'}}>Cancel</button>
+                  <div className="editor-modal-btns">
+                    <button onClick={handleReorderConfirm} className="editor-modal-btn confirm">Confirm</button>
+                    <button onClick={()=>setShowReorderModal(false)} className="editor-modal-btn cancel">Cancel</button>
                   </div>
                 </div>
               </div>
             )}
+            {isProcessingReorder && (
+              <div className="editor-modal-bg">
+                <div className="editor-modal reorder-modal">
+                  <h3>Reordering Pages...</h3>
+                  <div className="editor-modal-status">Processing, please wait.</div>
+                </div>
+              </div>
+            )}
           </main>
+          {/* Toolbar always at the bottom */}
           {showEditToolbar ? (
             <EditToolbar
               onBack={() => setShowEditToolbar(false)}
@@ -748,7 +790,6 @@ export default function Editor() {
                     if (tool.label === 'Edit') setShowEditToolbar(true);
                     if (tool.label === 'Delete') handleDeletePage();
                     if (tool.label === 'Download') handleDownloadPdf();
-                    if (tool.label === 'Enhance') handleEnhancePdf();
                     if (tool.label === 'Rotate') handleRotateCurrentPage();
                   }}
                 >
@@ -756,11 +797,15 @@ export default function Editor() {
                   <div className="tool-label">{tool.label}</div>
                 </div>
               ))}
-              {enhanceStatus && (
-                <div style={{ position: 'absolute', bottom: 60, left: '50%', transform: 'translateX(-50%)', background: '#fff', color: '#6c2bd7', borderRadius: 8, padding: '10px 24px', boxShadow: '0 2px 12px #0002', fontWeight: 600, zIndex: 100 }}>
-                  {enhanceStatus}
-                </div>
-              )}
+              {/* Revert button */}
+              <div
+                className={`toolbar-tool${undoStack.length === 0 ? ' disabled' : ''}`}
+                onClick={undoStack.length === 0 ? undefined : handleRevert}
+                title="Revert last change"
+              >
+                <div className="tool-icon">&#8630;</div>
+                <div className="tool-label">Revert</div>
+              </div>
             </footer>
           )}
         </>

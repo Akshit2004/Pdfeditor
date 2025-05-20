@@ -110,6 +110,7 @@
 .editor-main {
   min-height: 60vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
@@ -156,10 +157,26 @@
   border: 1.5px solid rgba(157, 78, 221, 0.13);
   animation: fade-in 1.2s;
   position: relative;
+  padding-bottom: 0;
 }
 
 .pdfjs-preview-wrapper.bw-filter {
   filter: grayscale(1) contrast(1.2);
+}
+
+@media (max-width: 700px) {
+  .pdfjs-preview-wrapper {
+    padding-bottom: 90px; /* Add space for toolbar on mobile */
+  }
+  .editor-page-nav {
+    position: static;
+    left: unset;
+    right: unset;
+    bottom: unset;
+    border-radius: 12px 12px 0 0;
+    z-index: 10;
+    margin-bottom: 0.5rem;
+  }
 }
 
 .pdfjs-document {
@@ -179,7 +196,7 @@
   justify-content: center;
   align-items: center;
   gap: 1.2rem;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
 }
 
 .pdfjs-controls button {
@@ -285,93 +302,10 @@
   color: #9d4edd;
 }
 
-/* =====================
-   Enhance Popup Styles
-   ===================== */
-.enhance-popup {
-  position: fixed;
-  left: 50%;
-  bottom: 120px;
-  transform: translateX(-50%) scale(1);
-  z-index: 9999;
-  display: flex;
-  gap: 18px;
-  background: rgba(255,255,255,0.18);
-  border-radius: 22px;
-  box-shadow: 0 8px 48px 0 #9d4edd55, 0 1.5px 32px #5f5fff33;
-  padding: 28px 44px 24px 44px;
-  align-items: center;
-  min-width: 340px;
-  max-width: 96vw;
-  flex-wrap: wrap;
-  border: 2.5px solid #9d4edd;
-  backdrop-filter: blur(18px) saturate(1.3);
-  animation: enhance-pop-fade 0.7s cubic-bezier(.23,1.12,.72,1.01);
-  box-sizing: border-box;
-}
-@keyframes enhance-pop-fade {
-  0% { opacity: 0; transform: translateX(-50%) scale(0.85) translateY(40px); }
-  100% { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
-}
-.enhance-popup button {
-  background: linear-gradient(90deg, #9d4edd 0%, #6a11cb 100%);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 10px 22px;
-  font-weight: 700;
-  font-size: 17px;
-  cursor: pointer;
-  margin: 0 6px;
-  box-shadow: 0 2px 16px #9d4edd33;
-  transition: background 0.18s, transform 0.18s, box-shadow 0.18s;
-  letter-spacing: 1px;
-}
-.enhance-popup button:hover {
-  background: linear-gradient(90deg, #6a11cb 0%, #9d4edd 100%);
-  transform: scale(1.07) translateY(-2px);
-  box-shadow: 0 4px 24px #9d4edd55;
-}
-.enhance-popup .revert-btn {
-  position: absolute;
-  top: 14px;
-  left: 18px;
-  background: transparent;
-  color: #3730a3;
-  font-size: 1.3rem;
-  border: none;
-  cursor: pointer;
-  font-weight: 900;
-  z-index: 2;
-  text-shadow: 0 2px 12px #9d4edd33;
-  padding: 0 8px;
-  transition: color 0.18s, transform 0.18s;
-}
-.enhance-popup .revert-btn:hover {
-  color: #9d4edd;
-  transform: scale(1.15) rotate(-10deg);
-}
-.enhance-popup span {
-  margin-left: 48px !important;
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: #6c2bd7;
-  letter-spacing: 1.2px;
-  text-shadow: 0 2px 12px #9d4edd33;
-}
-@media (max-width: 700px) {
-  .enhance-popup {
-    min-width: 96vw;
-    padding: 18px 2vw 18px 2vw;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 14px;
-  }
-  .enhance-popup span {
-    margin-left: 0 !important;
-    margin-top: 32px;
-    text-align: center;
-  }
+/* Disabled toolbar tool */
+.toolbar-tool.disabled {
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 /* =====================
@@ -405,4 +339,286 @@
     min-width: 90vw;
     padding: 2rem 1rem 1.5rem 1rem;
   }
+}
+
+/* --- Editor Indicators --- */
+.editor-indicator {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 20;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-weight: 600;
+  box-shadow: 0 1px 4px #0002;
+  font-size: 15px;
+}
+.editor-indicator.delete-mode {
+  background: #ffeded;
+  color: #c00;
+}
+.editor-indicator.erase-mode {
+  background: #e0f7fa;
+  color: #00796b;
+}
+.editor-indicator.move-mode {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+/* --- Color Pickers --- */
+.color-picker {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  background: #fff;
+  padding: 6px;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px #0002;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.color-picker label {
+  font-size: 12px;
+  margin-right: 6px;
+}
+
+/* --- PDF Highlight --- */
+.pdf-highlight {
+  position: absolute;
+  opacity: 0.4;
+  pointer-events: none;
+  border-radius: 2px;
+  box-sizing: border-box;
+}
+.pdf-highlight.move {
+  cursor: move;
+  pointer-events: auto;
+  border: 2px solid #3730a3;
+}
+.pdf-highlight.delete {
+  cursor: pointer;
+  pointer-events: auto;
+  border: 2px solid #c00;
+}
+.pdf-highlight.erase {
+  cursor: pointer;
+  pointer-events: auto;
+  border: 2px solid #00796b;
+}
+.pdf-highlight.highlight-preview {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* --- PDF Text Elements --- */
+.pdf-text {
+  position: absolute;
+  background: transparent;
+  font-size: 16px;
+  pointer-events: none;
+}
+.pdf-text.move {
+  cursor: move;
+  pointer-events: auto;
+  border: 1px dashed #3730a3;
+}
+.pdf-text.delete {
+  cursor: pointer;
+  pointer-events: auto;
+  border: 1px dashed #c00;
+}
+.pdf-text.erase {
+  cursor: pointer;
+  pointer-events: auto;
+  border: 1px dashed #00796b;
+}
+
+/* --- PDF Text Input (for adding text) --- */
+.pdf-text-input {
+  position: absolute;
+  min-width: 100px;
+  font-size: 16px;
+  background: #fff;
+  border: 1px solid #9d4edd;
+  border-radius: 4px;
+  padding: 2px 6px;
+  outline: none;
+  z-index: 10;
+}
+
+/* --- Download/Reorder Modal Styles --- */
+.editor-modal-bg {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1000;
+  background: rgba(30, 16, 60, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.editor-modal {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 32px #0002;
+  padding: 32px;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.editor-modal.download-modal h3,
+.editor-modal.reorder-modal h3 {
+  margin-bottom: 16px;
+  color: #6c2bd7;
+}
+.editor-modal-input {
+  padding: 8px 12px;
+  font-size: 16px;
+  border-radius: 6px;
+  border: 1px solid #9d4edd;
+  width: 100%;
+  margin-bottom: 18px;
+}
+.editor-modal-btns {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 0;
+}
+.editor-modal-btn {
+  border: none;
+  border-radius: 6px;
+  padding: 8px 18px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+}
+.editor-modal-btn.confirm {
+  background: #9d4edd;
+  color: #fff;
+}
+.editor-modal-btn.cancel {
+  background: #eee;
+  color: #3730a3;
+}
+.editor-modal-status {
+  margin-top: 16px;
+  color: #6c2bd7;
+  font-weight: 600;
+}
+
+/* --- Reorder Modal Page Thumbnails --- */
+.reorder-pages-list {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  margin-bottom: 18px;
+}
+.reorder-page-thumb {
+  border: 2px solid #9d4edd;
+  border-radius: 6px;
+  padding: 4px;
+  background: #f8f6ff;
+  min-width: 80px;
+  text-align: center;
+  cursor: grab;
+  position: relative;
+  transition: box-shadow 0.2s, border 0.2s;
+}
+.reorder-page-thumb.drag-over {
+  border: 3px dashed #6a11cb;
+  box-shadow: 0 0 0 4px #c77dff44;
+}
+.reorder-page-preview {
+  width: 60px;
+  height: 80px;
+  margin: 0 auto;
+  background: #eee;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+.reorder-page-label {
+  font-weight: 600;
+  font-size: 13px;
+  display: block;
+  margin-top: 4px;
+}
+.reorder-page-rotate {
+  margin-top: 2px;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid #9d4edd;
+  background: #f3eaff;
+  color: #6c2bd7;
+  cursor: pointer;
+}
+
+/* --- Editor Page Navigation --- */
+.editor-page-nav {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  margin: 0.5rem 0 0.5rem 0;
+  padding: 0.5rem 0;
+  background: rgba(40, 30, 70, 0.7);
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 2px 12px 0 rgba(31, 38, 135, 0.10);
+  position: relative;
+  z-index: 10;
+  margin-bottom: 0.5rem;
+}
+
+@media (max-width: 600px) {
+  .editor-page-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 90px; /* height of toolbar, adjust if needed */
+    margin: 0;
+    border-radius: 0;
+    z-index: 100;
+  }
+}
+
+.page-nav-btn {
+  background: linear-gradient(90deg, #c77dff 0%, #7f53ac 100%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1.2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  box-shadow: 0 2px 8px 0 rgba(127, 83, 172, 0.10);
+}
+
+.page-nav-btn:disabled {
+  background: #bdbdbd;
+  color: #eee;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.page-nav-btn:not(:disabled):hover {
+  background: linear-gradient(90deg, #7f53ac 0%, #c77dff 100%);
+  transform: translateY(-2px) scale(1.05);
+}
+
+.page-nav-info {
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  padding: 0 0.5rem;
 }

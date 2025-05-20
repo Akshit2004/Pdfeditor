@@ -94,8 +94,6 @@ public/pdf.worker.js                 # PDF.js worker for react-pdf
 
 ## ⚠️ Known Limitations
 
-- Edits (text, highlights) are not saved into the PDF file itself, only visual overlays.
-- B&W filter is a visual effect, not a permanent PDF change.
 - Large PDFs may load slowly in the browser.
 
 ---
