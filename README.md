@@ -1,134 +1,114 @@
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/your-logo-here.png" width="120" alt="PDFFusion Logo"/>
+  <img src="https://user-images.githubusercontent.com/your-logo-here.png" width="120" alt="PDF Editor Logo"/>
 </p>
 
-<h1 align="center">
-  <span style="color:#9d4edd;">PDF<span style="color:#5f5fff;">Fusion</span></span>
+<h1 align="center" style="font-size:3.2rem; font-weight:900; background: linear-gradient(90deg,#9d4edd,#6a11cb,#5f5fff); color:transparent; -webkit-background-clip:text; background-clip:text; text-shadow:0 4px 32px #9d4edd55; letter-spacing:2px;">
+  🚀 PDF Editor <span style="font-size:2.2rem;">(React)</span>
 </h1>
 
-<p align="center">
-  <b>The Ultimate Modern PDF Editor for the Web</b><br/>
-  <i>Upload, reorder, delete, and download PDF pages with a stunning, glassy UI.</i>
+<p align="center" style="font-size:1.2rem; color:#6c2bd7; font-weight:600;">
+  <img src="https://img.shields.io/badge/React-18.0+-61dafb?style=for-the-badge&logo=react"/>
+  <img src="https://img.shields.io/badge/pdf--lib-%239d4edd?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/Glassmorphic%20UI-%236a11cb?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/Responsive-Yes-5f5fff?style=for-the-badge"/>
+</p>
+
+<p align="center" style="font-size:1.1rem; color:#fff; background:rgba(40,30,70,0.55); border-radius:18px; padding:12px 32px; box-shadow:0 8px 32px #9d4edd55;">
+  <b>✨ The Ultimate Modern PDF Editor for the Web ✨</b><br/>
+  <i>Upload, reorder, enhance, and download PDFs with a stunning, glassy, futuristic UI.</i>
 </p>
 
 ---
 
 <div align="center">
-  <img src="https://user-images.githubusercontent.com/your-demo-gif-here.gif" width="700" alt="PDFFusion Demo"/>
+  <img src="https://user-images.githubusercontent.com/your-demo-gif-here.gif" width="700" alt="PDF Editor Demo" style="border-radius:18px;box-shadow:0 8px 32px #9d4edd55;"/>
 </div>
 
 ---
 
-## 🚀 Features
+## 🌌 Features at a Glance
 
-- 🌈 <b>Modern, Glassy, Gradient UI</b> — Inspired by the latest design trends, every page is a visual treat.
-- 📤 <b>Seamless PDF Upload</b> — Drag & drop or click to upload your PDF instantly.
-- 🖼️ <b>Live Preview</b> — Flip through your PDF before editing.
-- 🧩 <b>Drag-and-Drop Page Reordering</b> — Effortlessly rearrange pages with smooth animations.
-- 🗑️ <b>Delete Pages</b> — Remove unwanted pages with a single click.
-- 💾 <b>Download Modified PDF</b> — Export your masterpiece in seconds.
-- 🔄 <b>Persistent Editing</b> — Your PDF stays loaded even after refresh or navigation.
-- ⚡ <b>Blazing Fast</b> — Powered by React, Vite, and pdf-lib for instant feedback.
+<table>
+<tr>
+  <td>🌈 <b>Glassy, Neon UI</b></td>
+  <td>📤 <b>Seamless PDF Upload</b></td>
+  <td>🖼️ <b>Live Preview</b></td>
+  <td>🧩 <b>Drag-and-Drop Reorder</b></td>
+</tr>
+<tr>
+  <td>🗑️ <b>Delete Pages</b></td>
+  <td>🔄 <b>Rotate Pages</b></td>
+  <td>🖊️ <b>Text & Highlight Tools</b></td>
+  <td>🪄 <b>Enhance (B&W Filter)</b></td>
+</tr>
+<tr>
+  <td>💾 <b>Download PDF</b></td>
+  <td>⚡ <b>Instant Feedback</b></td>
+  <td>📱 <b>Responsive Design</b></td>
+  <td>🎨 <b>Customizable</b></td>
+</tr>
+</table>
 
 ---
 
-## ✨ Screenshots
+## 🛠️ How It Works
 
-<p align="center">
-  <img src="https://user-images.githubusercontent.com/your-upload-screenshot.png" width="350" style="border-radius:16px;box-shadow:0 8px 32px #9d4edd55;"/>
-  <img src="https://user-images.githubusercontent.com/your-editor-screenshot.png" width="350" style="border-radius:16px;box-shadow:0 8px 32px #5f5fff55;"/>
-</p>
+- <b>PDF Rendering:</b> [react-pdf](https://github.com/wojtekmaj/react-pdf) for fast, accurate PDF rendering.
+- <b>PDF Manipulation:</b> [pdf-lib](https://github.com/Hopding/pdf-lib) for page reordering, rotation, and deletion.
+- <b>State Management:</b> All edits are managed in React state for instant feedback.
 
 ---
 
-## 🛠️ Getting Started
+## 🚦 Getting Started
 
-### 1. Clone the Repo
-```sh
-# With SSH
-git clone git@github.com:your-username/Pdfeditor.git
-# Or with HTTPS
-git clone https://github.com:your-username/Pdfeditor.git
-cd Pdfeditor
-```
-
-### 2. Install Dependencies
-```sh
+```bash
+# 1. Install dependencies
 npm install
-```
 
-### 3. Start the App
-```sh
+# 2. Start the development server
 npm run dev
-```
 
-Visit [http://localhost:5173](http://localhost:5173) in your browser.
-
----
-
-## 🧬 Project Structure
-
-```
-Pdfeditor/
-├── public/
-│   └── pdf.worker.js
-├── src/
-│   ├── pages/
-│   │   ├── upload/UploadPage.jsx
-│   │   ├── PDF-Editor/editor.jsx
-│   │   └── landing page/landing.jsx
-│   └── ...
-├── index.html
-├── package.json
-└── ...
+# 3. Open your browser
+# Visit http://localhost:5173 (or the port shown in your terminal)
 ```
 
 ---
 
-## 🎨 Design Highlights
+## 🗂️ Project Structure
 
-- <b>Glassy, Frosted Panels</b> — Every card and toolbar floats with a soft blur and vibrant gradients.
-- <b>Animated Drag Handles</b> — Reordering pages feels tactile and fun.
-- <b>Responsive</b> — Works beautifully on desktop and tablet.
-- <b>Consistent Theme</b> — From upload to editor, the look is unified and modern.
-
----
-
-## 🧑‍💻 Tech Stack
-
-- <b>React</b> — UI Library
-- <b>Vite</b> — Lightning-fast dev server
-- <b>pdf-lib</b> — PDF manipulation
-- <b>react-pdf</b> — PDF rendering
-- <b>@hello-pangea/dnd</b> — Drag-and-drop
-- <b>react-icons</b> — Iconography
+```
+src/pages/PDF-Editor/editor.jsx      # Main editor logic and UI
+src/pages/PDF-Editor/editor.css      # Editor and modal styles
+src/pages/PDF-Editor/EditToolbar.jsx # Edit toolbar component
+public/pdf.worker.js                 # PDF.js worker for react-pdf
+```
 
 ---
 
-## 🦄 Out-of-this-World Experience
+## 🧑‍💻 Customization
 
-> <i>"PDF editing has never looked this good. PDFFusion is not just a tool, it's an experience."</i>
-
-- <b>Zero learning curve</b> — Intuitive controls, instant feedback.
-- <b>Persistent workflow</b> — Your PDF stays loaded, even if you refresh or navigate away.
-- <b>One-click download</b> — Get your edited PDF in seconds.
+- <b>Add/Remove Tools:</b> Edit <code>EditToolbar.jsx</code> and the toolbar logic in <code>editor.jsx</code>.
+- <b>Styling:</b> Tweak <code>editor.css</code> for layout, colors, and modal appearance.
 
 ---
 
-## 🤝 Contributing
+## ⚠️ Known Limitations
 
-Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
-
----
-
-## 📄 License
-
-MIT
+- Edits (text, highlights) are not saved into the PDF file itself, only visual overlays.
+- B&W filter is a visual effect, not a permanent PDF change.
+- Large PDFs may load slowly in the browser.
 
 ---
 
-<p align="center">
-  <img src="https://user-images.githubusercontent.com/your-footer-art.png" width="400"/>
-  <br/>
-  <b>PDF<span style="color:#9d4edd;">Fusion</span> — Edit. Reorder. Download. Beautifully.</b>
+## 🙏 Credits
+
+- [react-pdf](https://github.com/wojtekmaj/react-pdf)
+- [pdf-lib](https://github.com/Hopding/pdf-lib)
+- [React Icons](https://react-icons.github.io/react-icons/)
+
+---
+
+<p align="center" style="font-size:1.1rem; color:#9d4edd; font-weight:700; letter-spacing:1px;">
+  Made with 💜 using React, Vite, and a love for beautiful UIs.<br/>
 </p>
+

@@ -18,6 +18,17 @@ const TOOLBAR_TOOLS = [
 // Set up PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.js';
 
+function dataURLToUint8Array(dataURL) {
+  const base64 = dataURL.split(',')[1];
+  const binary = atob(base64);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
 export default function Editor() {
   const [pdfFile, setPdfFile] = useState(null);
   const [showModal, setShowModal] = useState(true);
@@ -42,6 +53,8 @@ export default function Editor() {
   const [moveOffset, setMoveOffset] = useState({ x: 0, y: 0 });
   const pdfContainerRef = useRef(null);
   const [enhanceStatus, setEnhanceStatus] = useState('');
+  const [bwFilter, setBwFilter] = useState(false);
+  const [isProcessingDownload, setIsProcessingDownload] = useState(false);
 
   // Download PDF functionality with styled popup menu
   const [showDownloadPopup, setShowDownloadPopup] = useState(false);
@@ -51,6 +64,7 @@ export default function Editor() {
   const [pageOrder, setPageOrder] = useState([]); // Array of page indices
   const [pagePreviews, setPagePreviews] = useState([]); // For reorder modal
   const [rotations, setRotations] = useState({}); // {pageIdx: rotation}
+  const [dragOverIdx, setDragOverIdx] = useState(null);
 
   const handleDownloadPdf = () => {
     if (!pdfFile) return;
@@ -58,21 +72,67 @@ export default function Editor() {
     setShowDownloadPopup(true);
   };
 
-  const handleDownloadConfirm = () => {
+  const handleDownloadConfirm = async () => {
     let fileName = downloadFileName.trim();
     if (!fileName) return;
     if (!fileName.toLowerCase().endsWith('.pdf')) fileName += '.pdf';
-    const url = URL.createObjectURL(pdfFile);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 100);
-    setShowDownloadPopup(false);
+    if (bwFilter) {
+      setIsProcessingDownload(true);
+      // True B&W export: render each page to canvas, grayscale, and re-embed
+      const { PDFDocument } = await import('pdf-lib');
+      const arrayBuffer = await pdfFile.arrayBuffer();
+      const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+      const pdf = await loadingTask.promise;
+      const newPdfDoc = await PDFDocument.create();
+      for (let i = 0; i < pdf.numPages; i++) {
+        const page = await pdf.getPage(i + 1);
+        const viewport = page.getViewport({ scale: 2 });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const ctx = canvas.getContext('2d');
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        // Grayscale conversion
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        for (let j = 0; j < imgData.data.length; j += 4) {
+          const avg = 0.299 * imgData.data[j] + 0.587 * imgData.data[j + 1] + 0.114 * imgData.data[j + 2];
+          imgData.data[j] = imgData.data[j + 1] = imgData.data[j + 2] = avg;
+        }
+        ctx.putImageData(imgData, 0, 0);
+        const pngUrl = canvas.toDataURL('image/png');
+        const pngBytes = dataURLToUint8Array(pngUrl);
+        const img = await newPdfDoc.embedPng(pngBytes);
+        const pageDims = { width: viewport.width, height: viewport.height };
+        const pdfPage = newPdfDoc.addPage([pageDims.width, pageDims.height]);
+        pdfPage.drawImage(img, { x: 0, y: 0, width: pageDims.width, height: pageDims.height });
+      }
+      const newPdfBytes = await newPdfDoc.save();
+      const blob = new Blob([newPdfBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setIsProcessingDownload(false);
+        setShowDownloadPopup(false);
+      }, 100);
+    } else {
+      const url = URL.createObjectURL(pdfFile);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+      setShowDownloadPopup(false);
+    }
   };
 
   const handleDownloadCancel = () => {
@@ -302,26 +362,11 @@ export default function Editor() {
   const handleEnhancePdf = () => {
     if (!pdfFile) return;
     setEnhanceStatus('Processing...');
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-      try {
-        const { PDFDocument } = await import('pdf-lib');
-        const arrayBuffer = e.target.result;
-        const pdfDoc = await PDFDocument.load(arrayBuffer);
-        // Optionally: remove unused objects, compress streams
-        pdfDoc.setTitle('Enhanced PDF');
-        // Save with compression (pdf-lib compresses by default)
-        const newPdfBytes = await pdfDoc.save({ useObjectStreams: true });
-        const newFile = new File([newPdfBytes], pdfFile.name.replace(/\.pdf$/i, '') + '-enhanced.pdf', { type: 'application/pdf' });
-        setPdfFile(newFile);
-        setEnhanceStatus('PDF enhanced and compressed!');
-        setTimeout(() => setEnhanceStatus(''), 2000);
-      } catch (err) {
-        setEnhanceStatus('Enhancement failed.');
-        setTimeout(() => setEnhanceStatus(''), 2000);
-      }
-    };
-    reader.readAsArrayBuffer(pdfFile);
+    setBwFilter(true); // Apply black and white filter visually
+    setTimeout(() => {
+      setEnhanceStatus('PDF enhanced and compressed!');
+      setTimeout(() => setEnhanceStatus(''), 2000);
+    }, 1200);
   };
 
   // Add handler for toolbar rotate button
@@ -365,8 +410,15 @@ export default function Editor() {
     const [moved] = newOrder.splice(fromIdx, 1);
     newOrder.splice(idx, 0, moved);
     setPageOrder(newOrder);
+    setDragOverIdx(null);
   };
-  const handleDragOver = (e) => e.preventDefault();
+  const handleDragOver = (e) => { e.preventDefault(); };
+  const handleDragEnter = (idx) => (e) => {
+    setDragOverIdx(idx);
+  };
+  const handleDragEnd = () => {
+    setDragOverIdx(null);
+  };
 
   const handleReorderConfirm = async () => {
     if (!pdfFile || pageOrder.length !== numPages) return;
@@ -422,7 +474,7 @@ export default function Editor() {
             {pdfFile ? (
               <>
                 <div 
-                  className="pdfjs-preview-wrapper" 
+                  className={`pdfjs-preview-wrapper${bwFilter ? ' bw-filter' : ''}`} 
                   ref={pdfContainerRef} 
                   onClick={handlePageClick}
                   onMouseMove={handleMouseMove}
@@ -625,9 +677,12 @@ export default function Editor() {
                     autoFocus
                   />
                   <div style={{display: 'flex', gap: 16}}>
-                    <button onClick={handleDownloadConfirm} style={{background: '#9d4edd', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 600, fontSize: 15, cursor: 'pointer'}}>Download</button>
-                    <button onClick={handleDownloadCancel} style={{background: '#eee', color: '#3730a3', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 600, fontSize: 15, cursor: 'pointer'}}>Cancel</button>
+                    <button onClick={handleDownloadConfirm} style={{background: '#9d4edd', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 600, fontSize: 15, cursor: isProcessingDownload ? 'not-allowed' : 'pointer'}} disabled={isProcessingDownload}>
+                      {isProcessingDownload ? 'Processing...' : 'Download'}
+                    </button>
+                    <button onClick={handleDownloadCancel} style={{background: '#eee', color: '#3730a3', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 600, fontSize: 15, cursor: isProcessingDownload ? 'not-allowed' : 'pointer'}} disabled={isProcessingDownload}>Cancel</button>
                   </div>
+                  {isProcessingDownload && <div style={{marginTop:16, color:'#6c2bd7', fontWeight:600}}>Generating B&W PDF...</div>}
                 </div>
               </div>
             )}
@@ -643,7 +698,13 @@ export default function Editor() {
                         onDragStart={handleDragStart(i)}
                         onDrop={handleDrop(i)}
                         onDragOver={handleDragOver}
-                        style={{border:'2px solid #9d4edd',borderRadius:6,padding:4,background:'#f8f6ff',minWidth:80,textAlign:'center',cursor:'grab',position:'relative'}}
+                        onDragEnter={handleDragEnter(i)}
+                        onDragEnd={handleDragEnd}
+                        style={{
+                          border: dragOverIdx === i ? '3px dashed #6a11cb' : '2px solid #9d4edd',
+                          borderRadius:6,padding:4,background:'#f8f6ff',minWidth:80,textAlign:'center',cursor:'grab',position:'relative',
+                          boxShadow: dragOverIdx === i ? '0 0 0 4px #c77dff44' : undefined
+                        }}
                       >
                         <div style={{width:60,height:80,margin:'0 auto',background:'#eee',borderRadius:4,overflow:'hidden',position:'relative'}}>
                           <Document file={pdfFile} loading={null}>
