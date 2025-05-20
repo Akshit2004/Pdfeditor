@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { FaFileUpload, FaEdit, FaTrash, FaDownload, FaMagic } from 'react-icons/fa';
+import { FaFileUpload, FaEdit, FaTrash, FaDownload, FaMagic, FaSyncAlt } from 'react-icons/fa';
 import { pdfjs, Document, Page } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
@@ -12,6 +12,7 @@ const TOOLBAR_TOOLS = [
   { icon: <FaMagic />, label: 'Enhance' },
   { icon: <FaTrash />, label: 'Delete' },
   { icon: <FaDownload />, label: 'Download' },
+  { icon: <FaSyncAlt />, label: 'Rotate' }, // Add Rotate tool
 ];
 
 // Set up PDF.js worker
@@ -45,6 +46,11 @@ export default function Editor() {
   // Download PDF functionality with styled popup menu
   const [showDownloadPopup, setShowDownloadPopup] = useState(false);
   const [downloadFileName, setDownloadFileName] = useState('');
+
+  const [showReorderModal, setShowReorderModal] = useState(false);
+  const [pageOrder, setPageOrder] = useState([]); // Array of page indices
+  const [pagePreviews, setPagePreviews] = useState([]); // For reorder modal
+  const [rotations, setRotations] = useState({}); // {pageIdx: rotation}
 
   const handleDownloadPdf = () => {
     if (!pdfFile) return;
@@ -104,28 +110,36 @@ export default function Editor() {
       setEraseMode(false);
       setMoveMode(false);
       setMovingElement(null);
+      setShowReorderModal(false);
     } else {
       setActiveEditTool(tool);
-      if (tool === 'Delete') {
-        setDeleteMode(true);
-        setEraseMode(false);
-        setMoveMode(false);
-        setMovingElement(null);
-      } else if (tool === 'erase') {
-        setEraseMode(true);
-        setDeleteMode(false);
-        setMoveMode(false);
-        setMovingElement(null);
-      } else if (tool === 'Move') {
-        setMoveMode(true);
-        setDeleteMode(false);
-        setEraseMode(false);
-        setMovingElement(null);
+      if (tool === 'reorder') {
+        // Open reorder modal and initialize page order
+        setShowReorderModal(true);
+        setPageOrder(Array.from({ length: numPages }, (_, i) => i));
       } else {
-        setDeleteMode(false);
-        setEraseMode(false);
-        setMoveMode(false);
-        setMovingElement(null);
+        setShowReorderModal(false);
+        if (tool === 'Delete') {
+          setDeleteMode(true);
+          setEraseMode(false);
+          setMoveMode(false);
+          setMovingElement(null);
+        } else if (tool === 'erase') {
+          setEraseMode(true);
+          setDeleteMode(false);
+          setMoveMode(false);
+          setMovingElement(null);
+        } else if (tool === 'Move') {
+          setMoveMode(true);
+          setDeleteMode(false);
+          setEraseMode(false);
+          setMovingElement(null);
+        } else {
+          setDeleteMode(false);
+          setEraseMode(false);
+          setMoveMode(false);
+          setMovingElement(null);
+        }
       }
     }
   };
@@ -310,6 +324,73 @@ export default function Editor() {
     reader.readAsArrayBuffer(pdfFile);
   };
 
+  // Add handler for toolbar rotate button
+  const handleRotateCurrentPage = () => {
+    setRotations(prev => ({
+      ...prev,
+      [pageNumber - 1]: ((prev[pageNumber - 1] || 0) + 90) % 360
+    }));
+  };
+
+  // Generate page previews for reorder modal
+  useEffect(() => {
+    if (!showReorderModal || !pdfFile || !numPages) return;
+    const loadPreviews = async () => {
+      const previews = [];
+      for (let i = 1; i <= numPages; i++) {
+        previews.push(i);
+      }
+      setPagePreviews(previews);
+    };
+    loadPreviews();
+  }, [showReorderModal, pdfFile, numPages]);
+
+  const handleRotatePage = (pageIdx) => {
+    setRotations(prev => ({
+      ...prev,
+      [pageIdx]: ((prev[pageIdx] || 0) + 90) % 360
+    }));
+  };
+
+  // Reorder modal drag-and-drop handlers
+  const handleDragStart = (idx) => (e) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', idx);
+  };
+  const handleDrop = (idx) => (e) => {
+    e.preventDefault();
+    const fromIdx = parseInt(e.dataTransfer.getData('text/plain'), 10);
+    if (fromIdx === idx) return;
+    const newOrder = [...pageOrder];
+    const [moved] = newOrder.splice(fromIdx, 1);
+    newOrder.splice(idx, 0, moved);
+    setPageOrder(newOrder);
+  };
+  const handleDragOver = (e) => e.preventDefault();
+
+  const handleReorderConfirm = async () => {
+    if (!pdfFile || pageOrder.length !== numPages) return;
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      const { PDFDocument } = await import('pdf-lib');
+      const arrayBuffer = e.target.result;
+      const pdfDoc = await PDFDocument.load(arrayBuffer);
+      const newPdf = await PDFDocument.create();
+      for (const idx of pageOrder) {
+        const [copied] = await newPdf.copyPages(pdfDoc, [idx]);
+        if (rotations[idx]) copied.setRotation(rotations[idx]);
+        newPdf.addPage(copied);
+      }
+      const newPdfBytes = await newPdf.save();
+      const newFile = new File([newPdfBytes], pdfFile.name || 'document.pdf', { type: 'application/pdf' });
+      setPdfFile(newFile);
+      setShowReorderModal(false);
+      setPageNumber(1);
+      setRotations({});
+    };
+    reader.readAsArrayBuffer(pdfFile);
+  };
+
   return (
     <div className="editor-bg">
       {showModal && (
@@ -400,7 +481,7 @@ export default function Editor() {
                     loading={<div className="pdf-placeholder">Loading PDF...</div>}
                     className="pdfjs-document"
                   >
-                    <Page pageNumber={pageNumber} className="pdfjs-page" />
+                    <Page pageNumber={pageNumber} className="pdfjs-page" rotate={rotations[pageNumber - 1] || 0} />
                   </Document>
 
                   {/* Render highlights */}
@@ -550,6 +631,45 @@ export default function Editor() {
                 </div>
               </div>
             )}
+            {/* Reorder modal */}
+            {showReorderModal && (
+              <div style={{position:'fixed',left:0,top:0,width:'100vw',height:'100vh',zIndex:1000,background:'rgba(30,16,60,0.25)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <div style={{background:'#fff',borderRadius:12,boxShadow:'0 4px 32px #0002',padding:32,minWidth:340,maxWidth:600}}>
+                  <h3 style={{marginBottom:16,color:'#6c2bd7'}}>Reorder Pages</h3>
+                  <div style={{display:'flex',gap:12,overflowX:'auto',marginBottom:18}}>
+                    {pageOrder.map((pageIdx, i) => (
+                      <div key={pageIdx}
+                        draggable
+                        onDragStart={handleDragStart(i)}
+                        onDrop={handleDrop(i)}
+                        onDragOver={handleDragOver}
+                        style={{border:'2px solid #9d4edd',borderRadius:6,padding:4,background:'#f8f6ff',minWidth:80,textAlign:'center',cursor:'grab',position:'relative'}}
+                      >
+                        <div style={{width:60,height:80,margin:'0 auto',background:'#eee',borderRadius:4,overflow:'hidden',position:'relative'}}>
+                          <Document file={pdfFile} loading={null}>
+                            <Page
+                              pageNumber={pageIdx+1}
+                              width={60}
+                              height={80}
+                              renderTextLayer={false}
+                              renderAnnotationLayer={false}
+                              rotate={rotations[pageIdx] || 0}
+                              loading={null}
+                            />
+                          </Document>
+                        </div>
+                        <span style={{fontWeight:600,fontSize:13,display:'block',marginTop:4}}>Page {pageIdx+1}</span>
+                        <button onClick={() => handleRotatePage(pageIdx)} style={{marginTop:2,fontSize:11,padding:'2px 8px',borderRadius:4,border:'1px solid #9d4edd',background:'#f3eaff',color:'#6c2bd7',cursor:'pointer'}}>Rotate</button>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{display:'flex',gap:16,justifyContent:'center'}}>
+                    <button onClick={handleReorderConfirm} style={{background:'#9d4edd',color:'#fff',border:'none',borderRadius:6,padding:'8px 18px',fontWeight:600,fontSize:15,cursor:'pointer'}}>Confirm</button>
+                    <button onClick={()=>setShowReorderModal(false)} style={{background:'#eee',color:'#3730a3',border:'none',borderRadius:6,padding:'8px 18px',fontWeight:600,fontSize:15,cursor:'pointer'}}>Cancel</button>
+                  </div>
+                </div>
+              </div>
+            )}
           </main>
           {showEditToolbar ? (
             <EditToolbar
@@ -568,6 +688,7 @@ export default function Editor() {
                     if (tool.label === 'Delete') handleDeletePage();
                     if (tool.label === 'Download') handleDownloadPdf();
                     if (tool.label === 'Enhance') handleEnhancePdf();
+                    if (tool.label === 'Rotate') handleRotateCurrentPage();
                   }}
                 >
                   <div className="tool-icon">{tool.icon}</div>
