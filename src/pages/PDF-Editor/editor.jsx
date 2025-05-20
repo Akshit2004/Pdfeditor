@@ -57,14 +57,13 @@ export default function Editor() {
   // Download PDF functionality with styled popup menu
   const [showDownloadPopup, setShowDownloadPopup] = useState(false);
   const [downloadFileName, setDownloadFileName] = useState('');
-
   const [showReorderModal, setShowReorderModal] = useState(false);
   const [pageOrder, setPageOrder] = useState([]); // Array of page indices
   const [pagePreviews, setPagePreviews] = useState([]); // For reorder modal
   const [rotations, setRotations] = useState({}); // {pageIdx: rotation}
   const [dragOverIdx, setDragOverIdx] = useState(null);
   const [isProcessingReorder, setIsProcessingReorder] = useState(false);
-  const [pendingReorder, setPendingReorder] = useState(false);
+  const [reorderKey, setReorderKey] = useState(0); // Key to force remount of reorder components
 
   const [undoStack, setUndoStack] = useState([]); // For revert/undo
 
@@ -206,7 +205,6 @@ export default function Editor() {
       setPageNumber(newPage);
     }
   };
-
   const handleEditToolSelect = (tool) => {
     if (tool === 'back') {
       setShowEditToolbar(false);
@@ -220,8 +218,10 @@ export default function Editor() {
       setActiveEditTool(tool);
       if (tool === 'reorder') {
         // Open reorder modal and initialize page order
-        setShowReorderModal(true);
+        setReorderKey(prev => prev + 1); // Force remount of reorder components
         setPageOrder(Array.from({ length: numPages }, (_, i) => i));
+        setRotations({}); // Reset rotations when opening modal
+        setShowReorderModal(true);
       } else {
         setShowReorderModal(false);
         if (tool === 'Delete') {
@@ -455,44 +455,73 @@ export default function Editor() {
   const handleDragEnd = () => {
     setDragOverIdx(null);
   };
-
-  const handleReorderConfirm = () => {
-    setShowReorderModal(false); // Hide modal first
-    setPendingReorder(true);   // Trigger reorder after modal unmounts
-  };
-
-  useEffect(() => {
-    if (pendingReorder && !showReorderModal) {
-      (async () => {
-        if (!pdfFile || pageOrder.length !== numPages) {
-          setPendingReorder(false);
-          return;
-        }
-        pushToUndoStack();
-        setIsProcessingReorder(true);
-        const reader = new FileReader();
-        reader.onload = async function(e) {
-          const { PDFDocument } = await import('pdf-lib');
-          const arrayBuffer = e.target.result;
-          const pdfDoc = await PDFDocument.load(arrayBuffer);
-          const newPdf = await PDFDocument.create();
-          for (const idx of pageOrder) {
-            const [copied] = await newPdf.copyPages(pdfDoc, [idx]);
-            if (rotations[idx]) copied.setRotation(rotations[idx]);
-            newPdf.addPage(copied);
-          }
-          const newPdfBytes = await newPdf.save();
-          const newFile = new File([newPdfBytes], pdfFile.name || 'document.pdf', { type: 'application/pdf' });
-          setPdfFile(newFile);
-          setPageNumber(1);
-          setRotations({});
-          setIsProcessingReorder(false);
-          setPendingReorder(false);
-        };
-        reader.readAsArrayBuffer(pdfFile);
-      })();
+  const handleReorderConfirm = async () => {
+    if (!pdfFile || pageOrder.length !== numPages) {
+      setShowReorderModal(false);
+      return;
     }
-  }, [pendingReorder, showReorderModal]);
+
+    try {
+      // Show processing modal immediately
+      setIsProcessingReorder(true);
+      
+      // Push to undo stack before modifying
+      pushToUndoStack();
+      
+      // Create a clean copy of the PDF file
+      const pdfCopy = pdfFile.slice(0, pdfFile.size, pdfFile.type);
+      
+      // Load and process the PDF
+      const { PDFDocument } = await import('pdf-lib');
+      
+      // Convert to ArrayBuffer using a Promise-based approach
+      const buffer = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(pdfCopy);
+      });
+      
+      // Create the reordered PDF
+      const pdfDoc = await PDFDocument.load(buffer);
+      const newPdf = await PDFDocument.create();
+      
+      // Copy each page according to the new order
+      for (const idx of pageOrder) {
+        const [copied] = await newPdf.copyPages(pdfDoc, [idx]);
+        if (rotations[idx]) copied.setRotation(rotations[idx]);
+        newPdf.addPage(copied);
+      }
+      
+      // Generate the new PDF
+      const newPdfBytes = await newPdf.save();
+      const newFile = new File([newPdfBytes], pdfFile.name || 'document.pdf', { type: 'application/pdf' });
+      
+      // Clean up before setting new file
+      setTextElements([]);
+      setHighlightElements([]);
+      setPageNumber(1);
+      setRotations({});
+      
+      // Update the PDF file (null first to clear references)
+      setPdfFile(null);
+      
+      // Wait for the component to release references to the old PDF
+      setTimeout(() => {
+        setPdfFile(newFile);
+        setIsProcessingReorder(false);
+        setShowReorderModal(false);
+      }, 100);
+      
+    } catch (error) {
+      console.error("Error reordering pages:", error);
+      setIsProcessingReorder(false);
+      setShowReorderModal(false);
+      
+      // Show error notification (you could add a toast/alert here)
+      alert("There was an error reordering pages. Please try again.");
+    }
+  };
 
   return (
     <div className="editor-bg">
@@ -717,15 +746,14 @@ export default function Editor() {
                   {isProcessingDownload && <div className="editor-modal-status">Generating B&W PDF...</div>}
                 </div>
               </div>
-            )}
-            {/* Reorder modal */}
-            {showReorderModal && !isProcessingReorder && !pendingReorder && (
+            )}            {/* Reorder modal */}
+            {showReorderModal && !isProcessingReorder && (
               <div className="editor-modal-bg">
                 <div className="editor-modal reorder-modal">
                   <h3>Reorder Pages</h3>
                   <div className="reorder-pages-list">
                     {pageOrder.map((pageIdx, i) => (
-                      <div key={pageIdx}
+                      <div key={`${reorderKey}-${i}`}
                         draggable
                         data-idx={i}
                         onDragStart={handleDragStart(i)}
@@ -742,6 +770,7 @@ export default function Editor() {
                         <div className="reorder-page-preview">
                           <Document file={pdfFile} loading={null}>
                             <Page
+                              key={`preview-${reorderKey}-${i}`}
                               pageNumber={pageIdx+1}
                               width={60}
                               height={80}
