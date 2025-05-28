@@ -6,12 +6,14 @@ import 'react-pdf/dist/esm/Page/TextLayer.css';
 import './editor.css';
 import './react-pdf-overrides.css';
 import EditToolbar from './EditToolbar';
+import FilterToolbar from './FilterToolbar';
 
 const TOOLBAR_TOOLS = [
   { icon: <FaEdit />, label: 'Edit' },
+  { icon: <FaSyncAlt />, label: 'Filter' }, // Filter is now second
   { icon: <FaTrash />, label: 'Delete' },
   { icon: <FaDownload />, label: 'Download' },
-  { icon: <FaSyncAlt />, label: 'Rotate' }, // Add Rotate tool
+  { icon: <FaSyncAlt />, label: 'Rotate' },
 ];
 
 // Set up PDF.js worker
@@ -35,6 +37,8 @@ export default function Editor() {
   const [pageNumber, setPageNumber] = useState(1);
   const [showEditToolbar, setShowEditToolbar] = useState(false);
   const [activeEditTool, setActiveEditTool] = useState(null);
+  const [showFilterToolbar, setShowFilterToolbar] = useState(false);
+  const [activeFilterTool, setActiveFilterTool] = useState(null);
   const fileInputRef = useRef();
   const [textElements, setTextElements] = useState([]);
   const [isAddingText, setIsAddingText] = useState(false);
@@ -368,6 +372,13 @@ export default function Editor() {
     }));
   };
 
+  // Compute CSS filter string based on activeFilterTool
+  let pdfFilter = '';
+  if (activeFilterTool === 'grayscale') pdfFilter = 'grayscale(1)';
+  if (activeFilterTool === 'sepia') pdfFilter = 'sepia(1)';
+  if (activeFilterTool === 'brighten') pdfFilter = 'brightness(1.3)';
+  if (activeFilterTool === 'darken') pdfFilter = 'brightness(0.7)';
+
   return (
     <div className="editor-bg">
       {showModal && (
@@ -420,14 +431,15 @@ export default function Editor() {
           <main className="editor-main">
             {pdfFile ? (
               <>
-                <div 
-                  className={`pdfjs-preview-wrapper${bwFilter ? ' bw-filter' : ''}`} 
-                  ref={pdfContainerRef} 
+                <div
+                  className={`pdfjs-preview-wrapper${bwFilter ? ' bw-filter' : ''}`}
+                  ref={pdfContainerRef}
                   onClick={handlePageClick}
                   onMouseMove={handleMouseMove}
                   onMouseUp={handleMouseUp}
                   onMouseDown={handleMouseDown}
                   onContextMenu={handlePdfAreaContextMenu}
+                  style={pdfFilter ? { filter: pdfFilter } : {}}
                 >
                   {/* Delete mode indicator */}
                   {deleteMode && (
@@ -600,6 +612,22 @@ export default function Editor() {
               onToolSelect={handleEditToolSelect}
               activeTool={activeEditTool}
             />
+          ) : showFilterToolbar ? (
+            <FilterToolbar
+              onBack={() => {
+                setShowFilterToolbar(false);
+                setActiveFilterTool(null);
+              }}
+              onToolSelect={tool => {
+                if (tool === 'back') {
+                  setShowFilterToolbar(false);
+                  setActiveFilterTool(null);
+                } else {
+                  setActiveFilterTool(tool);
+                }
+              }}
+              activeTool={activeFilterTool}
+            />
           ) : (
             <footer className="editor-toolbar">
               {TOOLBAR_TOOLS.map((tool, idx) => (
@@ -607,7 +635,14 @@ export default function Editor() {
                   className="toolbar-tool"
                   key={tool.label}
                   onClick={() => {
-                    if (tool.label === 'Edit') setShowEditToolbar(true);
+                    if (tool.label === 'Edit') {
+                      setShowEditToolbar(true);
+                      setShowFilterToolbar(false);
+                    }
+                    if (tool.label === 'Filter') {
+                      setShowFilterToolbar(true);
+                      setShowEditToolbar(false);
+                    }
                     if (tool.label === 'Delete') handleDeletePage();
                     if (tool.label === 'Download') handleDownloadPdf();
                     if (tool.label === 'Rotate') handleRotateCurrentPage();
