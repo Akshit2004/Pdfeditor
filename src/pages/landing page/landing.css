@@ -689,6 +689,45 @@ body, html, .landing {
   }
 }
 
+@media (max-width: 768px) {
+  .hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    justify-content: center;
+    padding: 2rem 0;
+  }
+  .hero-content {
+    align-items: center;
+    text-align: center;
+    width: 100%;
+    margin-bottom: 2rem;
+  }
+  .hero-title,
+  .hero-subtitle,
+  .hero-buttons,
+  .hero-stats {
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+  .hero-visual {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    margin: 0 auto;
+  }
+  .hero-image-container {
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+}
+
 @media (max-width: 600px) {
   .nav {
     flex-direction: column;
