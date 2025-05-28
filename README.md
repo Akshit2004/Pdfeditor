@@ -359,7 +359,7 @@ We welcome contributions! Here's how you can help:
 ### 🔧 **Development Setup**
 ```bash
 # Fork the repository
-git clone https://github.com/yourusername/pdfusion.git
+git clone https://github.com/akshit2004/pdfusion.git
 
 # Create feature branch
 git checkout -b feature/amazing-feature
