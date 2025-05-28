@@ -89,9 +89,9 @@ export default function Editor() {
     let fileName = downloadFileName.trim();
     if (!fileName) return;
     if (!fileName.toLowerCase().endsWith('.pdf')) fileName += '.pdf';
-    if (bwFilter) {
+    if (bwFilter || activeFilterTool) {
       setIsProcessingDownload(true);
-      // True B&W export: render each page to canvas, grayscale, and re-embed
+      // True filtered export: render each page to canvas, apply filter, and re-embed
       const { PDFDocument } = await import('pdf-lib');
       const arrayBuffer = await pdfFile.arrayBuffer();
       const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
@@ -105,11 +105,32 @@ export default function Editor() {
         canvas.height = viewport.height;
         const ctx = canvas.getContext('2d');
         await page.render({ canvasContext: ctx, viewport }).promise;
-        // Grayscale conversion
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        for (let j = 0; j < imgData.data.length; j += 4) {
-          const avg = 0.299 * imgData.data[j] + 0.587 * imgData.data[j + 1] + 0.114 * imgData.data[j + 2];
-          imgData.data[j] = imgData.data[j + 1] = imgData.data[j + 2] = avg;
+        // Apply filter to canvas
+        let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        if (activeFilterTool === 'grayscale' || bwFilter) {
+          for (let j = 0; j < imgData.data.length; j += 4) {
+            const avg = 0.299 * imgData.data[j] + 0.587 * imgData.data[j + 1] + 0.114 * imgData.data[j + 2];
+            imgData.data[j] = imgData.data[j + 1] = imgData.data[j + 2] = avg;
+          }
+        } else if (activeFilterTool === 'sepia') {
+          for (let j = 0; j < imgData.data.length; j += 4) {
+            const r = imgData.data[j], g = imgData.data[j+1], b = imgData.data[j+2];
+            imgData.data[j]     = Math.min(255, 0.393*r + 0.769*g + 0.189*b);
+            imgData.data[j + 1] = Math.min(255, 0.349*r + 0.686*g + 0.168*b);
+            imgData.data[j + 2] = Math.min(255, 0.272*r + 0.534*g + 0.131*b);
+          }
+        } else if (activeFilterTool === 'brighten') {
+          for (let j = 0; j < imgData.data.length; j += 4) {
+            imgData.data[j]     = Math.min(255, imgData.data[j] * 1.3);
+            imgData.data[j + 1] = Math.min(255, imgData.data[j + 1] * 1.3);
+            imgData.data[j + 2] = Math.min(255, imgData.data[j + 2] * 1.3);
+          }
+        } else if (activeFilterTool === 'darken') {
+          for (let j = 0; j < imgData.data.length; j += 4) {
+            imgData.data[j]     = imgData.data[j] * 0.7;
+            imgData.data[j + 1] = imgData.data[j + 1] * 0.7;
+            imgData.data[j + 2] = imgData.data[j + 2] * 0.7;
+          }
         }
         ctx.putImageData(imgData, 0, 0);
         const pngUrl = canvas.toDataURL('image/png');
@@ -616,12 +637,13 @@ export default function Editor() {
             <FilterToolbar
               onBack={() => {
                 setShowFilterToolbar(false);
-                setActiveFilterTool(null);
+                // Do not clear the filter selection here!
+                // setActiveFilterTool(null); // <-- Remove this line to preserve filter
               }}
               onToolSelect={tool => {
                 if (tool === 'back') {
                   setShowFilterToolbar(false);
-                  setActiveFilterTool(null);
+                  // setActiveFilterTool(null); // <-- Remove this line to preserve filter
                 } else {
                   setActiveFilterTool(tool);
                 }
