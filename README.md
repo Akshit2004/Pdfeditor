@@ -421,9 +421,7 @@ git push origin feature/amazing-feature
   <h2>📞 Support & Contact</h2>
   
   <p>
-    <a href="https://github.com/yourusername/pdfusion/issues">🐛 Report Bug</a> •
-    <a href="https://github.com/yourusername/pdfusion/issues">💡 Request Feature</a> •
-    <a href="mailto:your.email@example.com">📧 Contact</a>
+    <a href="mailto:akshumahajan2004@gmail.com">📧 Contact</a>
   </p>
   
   <p>
