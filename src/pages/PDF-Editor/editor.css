@@ -932,3 +932,89 @@
     filter: drop-shadow(0 0 20px rgba(157, 78, 221, 0.3));
   }
 }
+
+/* Reorder Pages Modal */
+.reorder-modal {
+  max-width: 800px;
+  width: 90vw;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.reorder-pages-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 15px;
+  margin: 20px 0;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  min-height: 200px;
+}
+
+.reorder-page-item {
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  padding: 8px;
+  cursor: grab;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.reorder-page-item:hover {
+  border-color: #007bff;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.reorder-page-item.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+  transform: rotate(5deg);
+}
+
+.reorder-page-number {
+  font-size: 12px;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 5px;
+}
+
+.reorder-page-preview {
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  overflow: hidden;
+  background: white;
+}
+
+.reorder-pdf-document {
+  display: flex;
+  justify-content: center;
+}
+
+.reorder-pdf-page {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Mobile responsive for reorder modal */
+@media (max-width: 768px) {
+  .reorder-modal {
+    width: 95vw;
+    max-height: 85vh;
+  }
+  
+  .reorder-pages-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+  }
+  
+  .reorder-page-item {
+    padding: 6px;
+  }
+  
+  .reorder-page-number {
+    font-size: 11px;
+  }
+}

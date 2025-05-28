@@ -65,6 +65,11 @@ export default function Editor() {
 
   const [undoStack, setUndoStack] = useState([]); // For revert/undo
 
+  // Reorder pages state
+  const [showReorderModal, setShowReorderModal] = useState(false);
+  const [pageOrder, setPageOrder] = useState([]);
+  const [draggedPage, setDraggedPage] = useState(null);
+
   // Helper to push current PDF to undo stack before destructive changes
   const pushToUndoStack = () => {
     if (pdfFile) setUndoStack(stack => [...stack, pdfFile]);
@@ -203,6 +208,11 @@ export default function Editor() {
       setEraseMode(false);
       setMoveMode(false);
       setMovingElement(null);
+    } else if (tool === 'reorder') {
+      setActiveEditTool(tool);
+      setShowReorderModal(true);
+      // Initialize page order array
+      setPageOrder(Array.from({ length: numPages }, (_, i) => i + 1));
     } else {
       setActiveEditTool(tool);
       if (tool === 'Delete') {
@@ -228,6 +238,67 @@ export default function Editor() {
       }
     }
   };
+
+  // Handle page reordering
+  const handlePageDragStart = (e, pageIndex) => {
+    setDraggedPage(pageIndex);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handlePageDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handlePageDrop = (e, targetIndex) => {
+    e.preventDefault();
+    if (draggedPage === null || draggedPage === targetIndex) return;
+    
+    const newOrder = [...pageOrder];
+    const draggedItem = newOrder[draggedPage];
+    newOrder.splice(draggedPage, 1);
+    newOrder.splice(targetIndex, 0, draggedItem);
+    
+    setPageOrder(newOrder);
+    setDraggedPage(null);
+  };
+
+  const applyPageReorder = async () => {
+    if (!pdfFile || pageOrder.length === 0) return;
+    
+    pushToUndoStack();
+    setIsProcessingDownload(true);
+    
+    try {
+      const { PDFDocument } = await import('pdf-lib');
+      const arrayBuffer = await pdfFile.arrayBuffer();
+      const pdfDoc = await PDFDocument.load(arrayBuffer);
+      const newPdfDoc = await PDFDocument.create();
+      
+      // Copy pages in new order
+      for (const pageNum of pageOrder) {
+        const [copiedPage] = await newPdfDoc.copyPages(pdfDoc, [pageNum - 1]);
+        newPdfDoc.addPage(copiedPage);
+      }
+      
+      const newPdfBytes = await newPdfDoc.save();
+      const newFile = new File([newPdfBytes], pdfFile.name || 'document.pdf', { type: 'application/pdf' });
+      setPdfFile(newFile);
+      
+      // Reset to first page
+      setPageNumber(1);
+      setShowReorderModal(false);
+    } catch (error) {
+      console.error('Error reordering pages:', error);
+    } finally {
+      setIsProcessingDownload(false);
+    }
+  };
+
+  const cancelPageReorder = () => {
+    setShowReorderModal(false);
+    setPageOrder([]);
+    setDraggedPage(null);  };
 
   const handlePageClick = (e) => {
     if (activeEditTool === 'addText' && !isAddingText) {
@@ -622,6 +693,56 @@ export default function Editor() {
                     <button onClick={handleDownloadCancel} className="editor-modal-btn cancel" disabled={isProcessingDownload}>Cancel</button>
                   </div>
                   {isProcessingDownload && <div className="editor-modal-status">Generating B&W PDF...</div>}
+                </div>
+              </div>
+            )}
+            {/* Reorder pages modal */}
+            {showReorderModal && (
+              <div className="editor-modal-bg">
+                <div className="editor-modal reorder-modal">
+                  <h3>Reorder Pages</h3>
+                  <p>Drag and drop to reorder pages</p>
+                  <div className="reorder-pages-grid">
+                    {pageOrder.map((pageNum, index) => (
+                      <div
+                        key={`page-${pageNum}-${index}`}
+                        className={`reorder-page-item${draggedPage === index ? ' dragging' : ''}`}
+                        draggable
+                        onDragStart={(e) => handlePageDragStart(e, index)}
+                        onDragOver={handlePageDragOver}
+                        onDrop={(e) => handlePageDrop(e, index)}
+                      >
+                        <div className="reorder-page-number">Page {pageNum}</div>
+                        <div className="reorder-page-preview">
+                          <Document file={pdfFile} className="reorder-pdf-document">
+                            <Page 
+                              pageNumber={pageNum} 
+                              width={100}
+                              className="reorder-pdf-page"
+                              renderTextLayer={false}
+                              renderAnnotationLayer={false}
+                            />
+                          </Document>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="editor-modal-btns">
+                    <button 
+                      onClick={applyPageReorder} 
+                      className="editor-modal-btn confirm"
+                      disabled={isProcessingDownload}
+                    >
+                      {isProcessingDownload ? 'Processing...' : 'Apply'}
+                    </button>
+                    <button 
+                      onClick={cancelPageReorder} 
+                      className="editor-modal-btn cancel"
+                      disabled={isProcessingDownload}
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

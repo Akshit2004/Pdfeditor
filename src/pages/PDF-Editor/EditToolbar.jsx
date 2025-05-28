@@ -1,11 +1,12 @@
 import React from 'react';
-import { FaArrowLeft, FaFont, FaHighlighter, FaPen, FaEraser } from 'react-icons/fa';
+import { FaArrowLeft, FaFont, FaHighlighter, FaPen, FaEraser, FaSort } from 'react-icons/fa';
 import './editor.css';
 
 const EDIT_TOOLS = [
   { icon: <FaFont />, label: 'Add Text', action: 'addText' },
   { icon: <FaHighlighter />, label: 'Highlight', action: 'highlight' },
   { icon: <FaEraser />, label: 'Erase', action: 'erase' },
+  { icon: <FaSort />, label: 'Reorder', action: 'reorder' },
 ];
 
 export default function EditToolbar({ onBack, onToolSelect, activeTool }) {
