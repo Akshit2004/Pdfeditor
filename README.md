@@ -171,8 +171,8 @@ graph TD
 
 ```bash
 # 📥 Clone the repository
-git clone https://github.com/akshit2004/pdfusion.git
-cd pdfusion
+git clone https://github.com/akshit2004/pdfeditor.git
+cd pdfeditor
 
 # 📦 Install dependencies
 npm install
@@ -371,7 +371,7 @@ We welcome contributions! Here's how you can help:
 ### 🔧 **Development Setup**
 ```bash
 # Fork the repository
-git clone https://github.com/akshit2004/pdfusion.git
+git clone https://github.com/akshit2004/pdfeditor.git
 
 # Create feature branch
 git checkout -b feature/amazing-feature
