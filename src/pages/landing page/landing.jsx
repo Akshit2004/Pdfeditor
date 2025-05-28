@@ -33,8 +33,14 @@ const Landing = () => {
 
   const handleFileSelect = (event) => {
     const files = Array.from(event.target.files);
-    const pdfFiles = files.filter(file => file.type === 'application/pdf');
-    setMergerFiles(prev => [...prev, ...pdfFiles]);
+    const allowedTypes = [
+      'application/pdf',
+      'image/png',
+      'image/jpeg',
+      'image/jpg',
+    ];
+    const validFiles = files.filter(file => allowedTypes.includes(file.type));
+    setMergerFiles(prev => [...prev, ...validFiles]);
   };
 
   const removeFile = (index) => {
@@ -52,23 +58,41 @@ const Landing = () => {
 
   const mergePDFs = async () => {
     if (mergerFiles.length < 2) return;
-    
     setIsProcessing(true);
     try {
       const { PDFDocument } = await import('pdf-lib');
       const mergedPdf = await PDFDocument.create();
-      
       for (const file of mergerFiles) {
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await PDFDocument.load(arrayBuffer);
-        const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-        pages.forEach(page => mergedPdf.addPage(page));
+        if (file.type === 'application/pdf') {
+          const arrayBuffer = await file.arrayBuffer();
+          const pdf = await PDFDocument.load(arrayBuffer);
+          const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+          pages.forEach(page => mergedPdf.addPage(page));
+        } else if (
+          file.type === 'image/png' ||
+          file.type === 'image/jpeg' ||
+          file.type === 'image/jpg'
+        ) {
+          const imageBytes = await file.arrayBuffer();
+          let embeddedImage, dims;
+          if (file.type === 'image/png') {
+            embeddedImage = await mergedPdf.embedPng(imageBytes);
+          } else {
+            embeddedImage = await mergedPdf.embedJpg(imageBytes);
+          }
+          dims = embeddedImage.scale(1);
+          const page = mergedPdf.addPage([dims.width, dims.height]);
+          page.drawImage(embeddedImage, {
+            x: 0,
+            y: 0,
+            width: dims.width,
+            height: dims.height,
+          });
+        }
       }
-      
       const pdfBytes = await mergedPdf.save();
       const blob = new Blob([pdfBytes], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
-      
       const a = document.createElement('a');
       a.href = url;
       a.download = 'merged-document.pdf';
@@ -76,11 +100,10 @@ const Landing = () => {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      
       setMergerFiles([]);
     } catch (error) {
-      console.error('Error merging PDFs:', error);
-      alert('Error merging PDFs. Please try again.');
+      console.error('Error merging PDFs/images:', error);
+      alert('Error merging PDFs/images. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -180,7 +203,7 @@ const Landing = () => {
               <input
                 type="file"
                 multiple
-                accept="application/pdf"
+                accept="application/pdf,image/png,image/jpeg,image/jpg"
                 onChange={handleFileSelect}
                 className="merger-file-input"
                 id="merger-file-input"
