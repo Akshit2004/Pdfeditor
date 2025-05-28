@@ -1,3 +1,38 @@
+/* --- PERFORMANCE OPTIMIZATIONS FOR MOBILE --- */
+
+/* 1. Use font-display: swap for custom fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+/* 2. Preload hero image in index.html for best LCP (add this to <head>): */
+/* <link rel="preload" as="image" href="/path/to/your/hero-image.webp" /> */
+
+/* 3. Reduce heavy effects on mobile for faster paint */
+@media (max-width: 600px) {
+  .bg-shapes, .glow-effect, .floating-element {
+    display: none !important;
+  }
+  .hero-image {
+    box-shadow: 0 2px 12px 0 rgba(106,130,251,0.10);
+    /* Consider using a lower-res image for mobile */
+  }
+  .nav, .hero {
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    background: rgba(20, 20, 40, 0.85) !important;
+  }
+}
+
+/* 4. Reduce blur and shadow for all mobile backgrounds */
+@media (max-width: 600px) {
+  .shape {
+    filter: none !important;
+    opacity: 0.2 !important;
+  }
+}
+
+/* 5. Suggestion: Use a compressed WebP/AVIF hero image for best LCP */
+/* Example: <img src="hero-image.webp" ... /> */
+
 /* Reset and base styles */
 body, html, .landing {
   margin: 0;

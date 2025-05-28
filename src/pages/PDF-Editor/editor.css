@@ -1,7 +1,7 @@
 .editor-bg {
   min-height: 100vh;
   width: 100vw;
-  background: linear-gradient(120deg, #1a1333 0%, #3a1c71 100%);
+  background: linear-gradient(135deg, #1a1a2e 0%, #23234b 100%);
   position: relative;
   overflow: hidden;
   transition: filter 0.4s;
@@ -10,7 +10,7 @@
 /* Desktop/Tablet - Enhanced background */
 @media (min-width: 769px) {
   .editor-bg {
-    background: linear-gradient(135deg, #1a1333 0%, #2d1b69 50%, #3a1c71 100%);
+    background: linear-gradient(135deg, #1a1a2e 0%, #23234b 100%);
     background-attachment: fixed;
   }
   
@@ -21,8 +21,8 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: radial-gradient(circle at 20% 80%, rgba(157, 78, 221, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(199, 125, 255, 0.08) 0%, transparent 50%);
+    background: radial-gradient(circle at 20% 80%, rgba(106, 130, 251, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(252, 92, 125, 0.08) 0%, transparent 50%);
     pointer-events: none;
     z-index: 1;
   }
@@ -46,7 +46,7 @@
 }
 
 .modal-content {
-  background: rgba(40, 30, 70, 0.55);
+  background: rgba(26, 26, 46, 0.55);
   border-radius: 24px;
   box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.25);
   border: 1.5px solid rgba(255,255,255,0.12);
@@ -62,7 +62,7 @@
 /* Desktop/Tablet - Enhanced modal */
 @media (min-width: 769px) {
   .modal-content {
-    background: rgba(40, 30, 70, 0.7);
+    background: rgba(26, 26, 46, 0.7);
     backdrop-filter: blur(15px);
     border-radius: 28px;
     padding: 4rem 3.5rem 3rem 3.5rem;
@@ -79,9 +79,9 @@
 
 .modal-upload-icon {
   font-size: 3.5rem;
-  color: #c77dff;
+  color: #6a82fb;
   margin-bottom: 1.2rem;
-  filter: drop-shadow(0 0 12px #9d4edd88);
+  filter: drop-shadow(0 0 12px #6a82fb88);
 }
 
 .modal-title {
@@ -100,7 +100,7 @@
 }
 
 .modal-upload-btn {
-  background: linear-gradient(90deg, #9d4edd 0%, #6a11cb 100%);
+  background: linear-gradient(90deg, #6a82fb 0%, #fc5c7d 100%);
   color: #fff;
   border: none;
   border-radius: 30px;
@@ -108,11 +108,11 @@
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 2px 16px #9d4edd33;
+  box-shadow: 0 2px 16px #6a82fb33;
   transition: background 0.2s, transform 0.2s;
 }
 .modal-upload-btn:hover {
-  background: linear-gradient(90deg, #6a11cb 0%, #9d4edd 100%);
+  background: linear-gradient(90deg, #fc5c7d 0%, #6a82fb 100%);
   transform: translateY(-2px) scale(1.04);
 }
 
@@ -129,9 +129,9 @@
 @media (min-width: 769px) {
   .editor-header {
     padding: 3rem 0 2rem 0;
-    background: rgba(26, 19, 51, 0.3);
+    background: rgba(26, 26, 46, 0.3);
     backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(157, 78, 221, 0.2);
+    border-bottom: 1px solid rgba(106, 130, 251, 0.2);
   }
 }
 
@@ -139,12 +139,12 @@
   font-size: 2.5rem;
   font-weight: 800;
   letter-spacing: 2px;
-  background: linear-gradient(90deg, #9d4edd 0%, #6a11cb 100%);
+  background: linear-gradient(90deg, #6a82fb 0%, #fc5c7d 100%);
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
   animation: title-fade-in 1.2s cubic-bezier(.23,1.12,.72,1.01);
-  text-shadow: 0 2px 16px #9d4edd33;
+  text-shadow: 0 2px 16px #6a82fb33;
   position: relative;
   z-index: 2;
 }
@@ -154,10 +154,10 @@
   .editor-title-animated {
     font-size: 3.2rem;
     letter-spacing: 3px;
-    background: linear-gradient(135deg, #c77dff 0%, #9d4edd 50%, #6a11cb 100%);
+    background: linear-gradient(135deg, #6a82fb 0%, #fc5c7d 50%, #6a82fb 100%);
     background-clip: text;
     -webkit-background-clip: text;
-    text-shadow: 0 4px 24px rgba(157, 78, 221, 0.4);
+    text-shadow: 0 4px 24px rgba(106, 130, 251, 0.4);
   }
 }
 @keyframes title-fade-in {
@@ -186,7 +186,7 @@
   height: 520px;
   background: rgba(255,255,255,0.07);
   border-radius: 18px;
-  box-shadow: 0 4px 32px #9d4edd22;
+  box-shadow: 0 4px 32px #6a82fb22;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -194,7 +194,7 @@
   font-size: 1.3rem;
   font-weight: 500;
   letter-spacing: 1px;
-  border: 1.5px solid rgba(157, 78, 221, 0.13);
+  border: 1.5px solid rgba(106, 130, 251, 0.13);
   animation: fade-in 1.2s;
 }
 
@@ -202,8 +202,8 @@
   width: 520px;
   height: 520px;
   border-radius: 18px;
-  box-shadow: 0 4px 32px #9d4edd22;
-  border: 1.5px solid rgba(157, 78, 221, 0.13);
+  box-shadow: 0 4px 32px #6a82fb22;
+  border: 1.5px solid rgba(106, 130, 251, 0.13);
   background: #18122b;
   overflow: hidden;
   animation: fade-in 1.2s;
@@ -216,8 +216,8 @@
   justify-content: center;
   background: rgba(255,255,255,0.07);
   border-radius: 18px;
-  box-shadow: 0 4px 32px #9d4edd22;
-  border: 1.5px solid rgba(157, 78, 221, 0.13);
+  box-shadow: 0 4px 32px #6a82fb22;
+  border: 1.5px solid rgba(106, 130, 251, 0.13);
   animation: fade-in 1.2s;
   position: relative;
   padding-bottom: 0;
@@ -239,8 +239,8 @@
     margin-top: 50px;
     background: rgba(255,255,255,0.12);
     border-radius: 20px;
-    box-shadow: 0 8px 48px rgba(157, 78, 221, 0.35);
-    border: 2px solid rgba(157, 78, 221, 0.2);
+    box-shadow: 0 8px 48px rgba(106, 130, 251, 0.35);
+    border: 2px solid rgba(106, 130, 251, 0.2);
     backdrop-filter: blur(10px);
   }
 }
@@ -278,7 +278,7 @@
   max-width: 90vw;
   max-height: 80vh;
   object-fit: contain;
-  box-shadow: 0 2px 16px #9d4edd22;
+  box-shadow: 0 2px 16px #6a82fb22;
   border-radius: 8px;
   overflow: hidden;
 }
@@ -307,14 +307,14 @@
     gap: 2rem;
     margin-top: 2rem;
     padding: 1rem;
-    background: rgba(40, 30, 70, 0.3);
+    background: rgba(26, 26, 46, 0.3);
     border-radius: 12px;
     backdrop-filter: blur(8px);
   }
 }
 
 .pdfjs-controls button {
-  background: linear-gradient(90deg, #9d4edd 0%, #6a11cb 100%);
+  background: linear-gradient(90deg, #6a82fb 0%, #fc5c7d 100%);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -322,7 +322,7 @@
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 2px 8px #9d4edd33;
+  box-shadow: 0 2px 8px #6a82fb33;
   transition: background 0.2s, transform 0.2s;
 }
 
@@ -332,17 +332,17 @@
     padding: 0.6rem 1.8rem;
     font-size: 1.1rem;
     border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(157, 78, 221, 0.3);
+    box-shadow: 0 4px 12px rgba(106, 130, 251, 0.3);
     transition: all 0.3s ease;
   }
   
   .pdfjs-controls button:not(:disabled):hover {
     transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 6px 16px rgba(157, 78, 221, 0.4);
+    box-shadow: 0 6px 16px rgba(106, 130, 251, 0.4);
   }
 }
 .pdfjs-controls button:disabled {
-  background: #3a1c71;
+  background: #23234b;
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -361,9 +361,9 @@
   top: 20px;
   right: 20px;
   width: 80px;
-  background: rgba(40, 30, 70, 0.85);
+  background: rgba(26, 26, 46, 0.85);
   border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(157, 78, 221, 0.3);
+  box-shadow: 0 8px 32px rgba(106, 130, 251, 0.3);
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -389,9 +389,9 @@
     transform: translateX(-50%);
     width: 100vw;
     max-width: 600px;
-    background: rgba(40, 30, 70, 0.55);
+    background: rgba(26, 26, 46, 0.55);
     border-radius: 24px 24px 0 0;
-    box-shadow: 0 -4px 32px #9d4edd22;
+    box-shadow: 0 -4px 32px #6a82fb22;
     display: flex;
     flex-direction: row;
     justify-content: flex-start;
@@ -404,7 +404,7 @@
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: thin; /* Firefox */
-    scrollbar-color: #9d4edd #2a174d; /* Firefox */
+    scrollbar-color: #6a82fb #1a1a2e; /* Firefox */
   }
 }
 
@@ -412,10 +412,10 @@
 @media (max-width: 768px) {
   .editor-toolbar::-webkit-scrollbar {
     height: 6px;
-    background: #2a174d;
+    background: #1a1a2e;
   }
   .editor-toolbar::-webkit-scrollbar-thumb {
-    background: #9d4edd;
+    background: #6a82fb;
     border-radius: 4px;
   }
 }
@@ -469,7 +469,7 @@
     transition: all 0.2s ease;
   }
   .toolbar-tool:hover {
-    background: rgba(157, 78, 221, 0.15);
+    background: rgba(106, 130, 251, 0.15);
   }
 }
 
@@ -482,14 +482,14 @@
   }
 }
 .toolbar-tool:hover .tool-icon {
-  color: #9d4edd;
+  color: #6a82fb;
   transform: scale(1.18) rotate(-8deg);
 }
 
 /* Desktop/Tablet - Different hover behavior */
 @media (min-width: 769px) {
   .toolbar-tool:hover .tool-icon {
-    color: #c77dff;
+    color: #fc5c7d;
     transform: scale(1.2);
   }
 }
