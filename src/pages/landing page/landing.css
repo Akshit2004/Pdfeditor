@@ -297,3 +297,57 @@ body, html, .landing {
     gap: 1.2rem;
   }
 }
+@media (max-width: 768px) {
+  .modal-content {
+    width: 92%;
+    max-height: 85vh;
+  }
+  
+  .modal-header {
+    padding: 1.2rem 1.5rem 0.8rem 1.5rem;
+  }
+  
+  .modal-title {
+    font-size: 1.4rem;
+  }
+  
+  .modal-body {
+    padding: 0.8rem 1.5rem 1.5rem 1.5rem;
+  }
+  
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
+  }
+  
+  .feature-card {
+    padding: 1rem;
+  }
+  
+  .modal-description {
+    font-size: 1rem;
+  }
+}
+@media (max-width: 480px) {
+  .modal-header {
+    padding: 1rem;
+  }
+  
+  .modal-title {
+    font-size: 1.3rem;
+  }
+  
+  .modal-body {
+    padding: 0.8rem 1rem 1.2rem 1rem;
+  }
+  
+  .feature-card {
+    padding: 0.8rem;
+  }
+  
+  .feature-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+}

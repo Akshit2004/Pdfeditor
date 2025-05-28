@@ -20,8 +20,7 @@ const Landing = () => {
         element.style.transform = `translateY(${yPos}px)`;
       });
     };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll);    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
@@ -54,23 +53,18 @@ const Landing = () => {
           <p className="hero-subtitle">
             Experience the future of document editing with AI-powered tools that bring your PDFs to life.
             Edit, enhance, and collaborate with unprecedented precision and ease.
-          </p>
-          <div className="hero-buttons">
+          </p>          <div className="hero-buttons">
             <Link to="/editor" className="primary-button">
               Launch Editor <FaChevronRight className="btn-icon" />
             </Link>
-            <a href="#features" className="secondary-button">
-              Explore Features
-            </a>
-          </div>
-          <div className="hero-stats">
+          </div>          <div className="hero-stats">
             <div className="stat">
-              <span className="stat-number">500k+</span>
-              <span className="stat-label">Users</span>
+              <span className="stat-number">100%</span>
+              <span className="stat-label">Free to Use</span>
             </div>
             <div className="stat">
-              <span className="stat-number">4.9</span>
-              <span className="stat-label">Rating</span>
+              <span className="stat-number">Web-Based</span>
+              <span className="stat-label">No Downloads</span>
             </div>
             <div className="stat">
               <span className="stat-number">99.9%</span>
@@ -94,8 +88,7 @@ const Landing = () => {
             </div>
             <div className="floating-element elem-3 parallax" data-speed="0.06">
               <FaMagic />
-            </div>
-          </div>
+            </div>          </div>
         </div>
       </section>
     </div>
