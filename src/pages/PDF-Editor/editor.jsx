@@ -63,12 +63,13 @@ export default function Editor() {
   const [downloadFileName, setDownloadFileName] = useState('');
   const [rotations, setRotations] = useState({}); // {pageIdx: rotation}
 
-  const [undoStack, setUndoStack] = useState([]); // For revert/undo
-
-  // Reorder pages state
+  const [undoStack, setUndoStack] = useState([]); // For revert/undo  // Reorder pages state
   const [showReorderModal, setShowReorderModal] = useState(false);
   const [pageOrder, setPageOrder] = useState([]);
   const [draggedPage, setDraggedPage] = useState(null);
+  const [touchStartPos, setTouchStartPos] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
 
   // Helper to push current PDF to undo stack before destructive changes
   const pushToUndoStack = () => {
@@ -236,23 +237,48 @@ export default function Editor() {
         setMoveMode(false);
         setMovingElement(null);
       }
-    }
-  };
-
-  // Handle page reordering
+    }  };
+  // Handle page reordering with enhanced touch support
   const handlePageDragStart = (e, pageIndex) => {
     setDraggedPage(pageIndex);
+    setIsDragging(true);
     e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', pageIndex);
+    
+    // Add visual feedback
+    setTimeout(() => {
+      const element = e.target;
+      element.style.opacity = '0.7';
+    }, 0);
   };
 
-  const handlePageDragOver = (e) => {
+  const handlePageDragOver = (e, targetIndex) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    setDragOverIndex(targetIndex);
+  };
+
+  const handlePageDragEnter = (e, targetIndex) => {
+    e.preventDefault();
+    setDragOverIndex(targetIndex);
+  };
+
+  const handlePageDragLeave = (e) => {
+    // Only clear if leaving the grid area
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setDragOverIndex(null);
+    }
   };
 
   const handlePageDrop = (e, targetIndex) => {
     e.preventDefault();
-    if (draggedPage === null || draggedPage === targetIndex) return;
+    setDragOverIndex(null);
+    setIsDragging(false);
+    
+    if (draggedPage === null || draggedPage === targetIndex) {
+      setDraggedPage(null);
+      return;
+    }
     
     const newOrder = [...pageOrder];
     const draggedItem = newOrder[draggedPage];
@@ -261,6 +287,78 @@ export default function Editor() {
     
     setPageOrder(newOrder);
     setDraggedPage(null);
+  };
+
+  const handlePageDragEnd = (e) => {
+    setDraggedPage(null);
+    setIsDragging(false);
+    setDragOverIndex(null);
+    e.target.style.opacity = '1';
+  };
+
+  // Touch events for mobile drag and drop
+  const handleTouchStart = (e, pageIndex) => {
+    const touch = e.touches[0];
+    setTouchStartPos({ x: touch.clientX, y: touch.clientY });
+    setDraggedPage(pageIndex);
+    
+    // Add haptic feedback if available
+    if (navigator.vibrate) {
+      navigator.vibrate(50);
+    }
+  };
+
+  const handleTouchMove = (e, pageIndex) => {
+    if (!touchStartPos || draggedPage === null) return;
+    
+    e.preventDefault();
+    const touch = e.touches[0];
+    const deltaX = Math.abs(touch.clientX - touchStartPos.x);
+    const deltaY = Math.abs(touch.clientY - touchStartPos.y);
+    
+    // Start dragging if moved enough
+    if (deltaX > 10 || deltaY > 10) {
+      setIsDragging(true);
+      
+      // Find element under touch
+      const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+      const pageItem = elementBelow?.closest('.reorder-page-item');
+      if (pageItem) {
+        const targetIndex = parseInt(pageItem.dataset.index);
+        if (!isNaN(targetIndex)) {
+          setDragOverIndex(targetIndex);
+        }
+      }
+    }
+  };
+
+  const handleTouchEnd = (e, pageIndex) => {
+    if (!isDragging || draggedPage === null || dragOverIndex === null) {
+      setTouchStartPos(null);
+      setDraggedPage(null);
+      setIsDragging(false);
+      setDragOverIndex(null);
+      return;
+    }
+    
+    // Perform the reorder
+    if (draggedPage !== dragOverIndex) {
+      const newOrder = [...pageOrder];
+      const draggedItem = newOrder[draggedPage];
+      newOrder.splice(draggedPage, 1);
+      newOrder.splice(dragOverIndex, 0, draggedItem);
+      setPageOrder(newOrder);
+      
+      // Haptic feedback for successful drop
+      if (navigator.vibrate) {
+        navigator.vibrate([50, 50, 50]);
+      }
+    }
+    
+    setTouchStartPos(null);
+    setDraggedPage(null);
+    setIsDragging(false);
+    setDragOverIndex(null);
   };
 
   const applyPageReorder = async () => {
@@ -294,11 +392,14 @@ export default function Editor() {
       setIsProcessingDownload(false);
     }
   };
-
   const cancelPageReorder = () => {
     setShowReorderModal(false);
     setPageOrder([]);
-    setDraggedPage(null);  };
+    setDraggedPage(null);
+    setTouchStartPos(null);
+    setIsDragging(false);
+    setDragOverIndex(null);
+  };
 
   const handlePageClick = (e) => {
     if (activeEditTool === 'addText' && !isAddingText) {
@@ -695,22 +796,42 @@ export default function Editor() {
                   {isProcessingDownload && <div className="editor-modal-status">Generating B&W PDF...</div>}
                 </div>
               </div>
-            )}
-            {/* Reorder pages modal */}
+            )}            {/* Reorder pages modal */}
             {showReorderModal && (
               <div className="editor-modal-bg">
                 <div className="editor-modal reorder-modal">
                   <h3>Reorder Pages</h3>
                   <p>Drag and drop to reorder pages</p>
-                  <div className="reorder-pages-grid">
+                  <div className="reorder-pages-container">
+                    <div className="reorder-pages-grid">
                     {pageOrder.map((pageNum, index) => (
                       <div
                         key={`page-${pageNum}-${index}`}
-                        className={`reorder-page-item${draggedPage === index ? ' dragging' : ''}`}
+                        data-index={index}
+                        className={`reorder-page-item${
+                          draggedPage === index ? ' dragging' : ''
+                        }${dragOverIndex === index ? ' drag-over' : ''}${
+                          isDragging && draggedPage !== index ? ' drag-active' : ''
+                        }`}
                         draggable
                         onDragStart={(e) => handlePageDragStart(e, index)}
-                        onDragOver={handlePageDragOver}
+                        onDragOver={(e) => handlePageDragOver(e, index)}
+                        onDragEnter={(e) => handlePageDragEnter(e, index)}
+                        onDragLeave={handlePageDragLeave}
                         onDrop={(e) => handlePageDrop(e, index)}
+                        onDragEnd={handlePageDragEnd}
+                        onTouchStart={(e) => handleTouchStart(e, index)}
+                        onTouchMove={(e) => handleTouchMove(e, index)}
+                        onTouchEnd={(e) => handleTouchEnd(e, index)}
+                        style={{
+                          transform: draggedPage === index && isDragging 
+                            ? 'scale(1.05) rotate(5deg)' 
+                            : dragOverIndex === index && isDragging
+                            ? 'scale(1.02)'
+                            : 'scale(1)',
+                          transition: isDragging ? 'none' : 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                          zIndex: draggedPage === index ? 1000 : 1
+                        }}
                       >
                         <div className="reorder-page-number">Page {pageNum}</div>
                         <div className="reorder-page-preview">
@@ -724,8 +845,13 @@ export default function Editor() {
                             />
                           </Document>
                         </div>
-                      </div>
+                        <div className="reorder-drag-indicator">
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                        </div>                      </div>
                     ))}
+                  </div>
                   </div>
                   <div className="editor-modal-btns">
                     <button 
@@ -733,7 +859,7 @@ export default function Editor() {
                       className="editor-modal-btn confirm"
                       disabled={isProcessingDownload}
                     >
-                      {isProcessingDownload ? 'Processing...' : 'Apply'}
+                      {isProcessingDownload ? 'Processing...' : 'Apply Changes'}
                     </button>
                     <button 
                       onClick={cancelPageReorder} 
