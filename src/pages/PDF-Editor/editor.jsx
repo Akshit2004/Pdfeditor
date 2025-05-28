@@ -57,44 +57,9 @@ export default function Editor() {
   // Download PDF functionality with styled popup menu
   const [showDownloadPopup, setShowDownloadPopup] = useState(false);
   const [downloadFileName, setDownloadFileName] = useState('');
-  const [showReorderModal, setShowReorderModal] = useState(false);
-  const [pageOrder, setPageOrder] = useState([]); // Array of page indices
-  const [pagePreviews, setPagePreviews] = useState([]); // For reorder modal
   const [rotations, setRotations] = useState({}); // {pageIdx: rotation}
-  const [dragOverIdx, setDragOverIdx] = useState(null);
-  const [isProcessingReorder, setIsProcessingReorder] = useState(false);
-  const [reorderKey, setReorderKey] = useState(0); // Key to force remount of reorder components
 
   const [undoStack, setUndoStack] = useState([]); // For revert/undo
-
-  // Touch drag state for mobile reorder
-  const [touchDragIdx, setTouchDragIdx] = useState(null);
-  const [touchOverIdx, setTouchOverIdx] = useState(null);
-
-  const handleTouchStart = (idx) => (e) => {
-    setTouchDragIdx(idx);
-    setTouchOverIdx(idx);
-  };
-  const handleTouchMove = (idx) => (e) => {
-    if (touchDragIdx === null) return;
-    const touch = e.touches[0];
-    const target = document.elementFromPoint(touch.clientX, touch.clientY);
-    if (!target) return;
-    const thumb = target.closest('.reorder-page-thumb');
-    if (!thumb) return;
-    const overIdx = parseInt(thumb.getAttribute('data-idx'), 10);
-    if (overIdx !== touchOverIdx) setTouchOverIdx(overIdx);
-  };
-  const handleTouchEnd = (idx) => (e) => {
-    if (touchDragIdx !== null && touchOverIdx !== null && touchDragIdx !== touchOverIdx) {
-      const newOrder = [...pageOrder];
-      const [moved] = newOrder.splice(touchDragIdx, 1);
-      newOrder.splice(touchOverIdx, 0, moved);
-      setPageOrder(newOrder);
-    }
-    setTouchDragIdx(null);
-    setTouchOverIdx(null);
-  };
 
   // Helper to push current PDF to undo stack before destructive changes
   const pushToUndoStack = () => {
@@ -213,38 +178,28 @@ export default function Editor() {
       setEraseMode(false);
       setMoveMode(false);
       setMovingElement(null);
-      setShowReorderModal(false);
     } else {
       setActiveEditTool(tool);
-      if (tool === 'reorder') {
-        // Open reorder modal and initialize page order
-        setReorderKey(prev => prev + 1); // Force remount of reorder components
-        setPageOrder(Array.from({ length: numPages }, (_, i) => i));
-        setRotations({}); // Reset rotations when opening modal
-        setShowReorderModal(true);
+      if (tool === 'Delete') {
+        setDeleteMode(true);
+        setEraseMode(false);
+        setMoveMode(false);
+        setMovingElement(null);
+      } else if (tool === 'erase') {
+        setEraseMode(true);
+        setDeleteMode(false);
+        setMoveMode(false);
+        setMovingElement(null);
+      } else if (tool === 'Move') {
+        setMoveMode(true);
+        setDeleteMode(false);
+        setEraseMode(false);
+        setMovingElement(null);
       } else {
-        setShowReorderModal(false);
-        if (tool === 'Delete') {
-          setDeleteMode(true);
-          setEraseMode(false);
-          setMoveMode(false);
-          setMovingElement(null);
-        } else if (tool === 'erase') {
-          setEraseMode(true);
-          setDeleteMode(false);
-          setMoveMode(false);
-          setMovingElement(null);
-        } else if (tool === 'Move') {
-          setMoveMode(true);
-          setDeleteMode(false);
-          setEraseMode(false);
-          setMovingElement(null);
-        } else {
-          setDeleteMode(false);
-          setEraseMode(false);
-          setMoveMode(false);
-          setMovingElement(null);
-        }
+        setDeleteMode(false);
+        setEraseMode(false);
+        setMoveMode(false);
+        setMovingElement(null);
       }
     }
   };
@@ -411,116 +366,6 @@ export default function Editor() {
       ...prev,
       [pageNumber - 1]: ((prev[pageNumber - 1] || 0) + 90) % 360
     }));
-  };
-
-  // Generate page previews for reorder modal
-  useEffect(() => {
-    if (!showReorderModal || !pdfFile || !numPages) return;
-    const loadPreviews = async () => {
-      const previews = [];
-      for (let i = 1; i <= numPages; i++) {
-        previews.push(i);
-      }
-      setPagePreviews(previews);
-    };
-    loadPreviews();
-  }, [showReorderModal, pdfFile, numPages]);
-
-  const handleRotatePage = (pageIdx) => {
-    setRotations(prev => ({
-      ...prev,
-      [pageIdx]: ((prev[pageIdx] || 0) + 90) % 360
-    }));
-  };
-
-  // Reorder modal drag-and-drop handlers
-  const handleDragStart = (idx) => (e) => {
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', idx);
-  };
-  const handleDrop = (idx) => (e) => {
-    e.preventDefault();
-    const fromIdx = parseInt(e.dataTransfer.getData('text/plain'), 10);
-    if (fromIdx === idx) return;
-    const newOrder = [...pageOrder];
-    const [moved] = newOrder.splice(fromIdx, 1);
-    newOrder.splice(idx, 0, moved);
-    setPageOrder(newOrder);
-    setDragOverIdx(null);
-  };
-  const handleDragOver = (e) => { e.preventDefault(); };
-  const handleDragEnter = (idx) => (e) => {
-    setDragOverIdx(idx);
-  };
-  const handleDragEnd = () => {
-    setDragOverIdx(null);
-  };
-  const handleReorderConfirm = async () => {
-    if (!pdfFile || pageOrder.length !== numPages) {
-      setShowReorderModal(false);
-      return;
-    }
-
-    try {
-      // Show processing modal immediately
-      setIsProcessingReorder(true);
-      
-      // Push to undo stack before modifying
-      pushToUndoStack();
-      
-      // Create a clean copy of the PDF file
-      const pdfCopy = pdfFile.slice(0, pdfFile.size, pdfFile.type);
-      
-      // Load and process the PDF
-      const { PDFDocument } = await import('pdf-lib');
-      
-      // Convert to ArrayBuffer using a Promise-based approach
-      const buffer = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsArrayBuffer(pdfCopy);
-      });
-      
-      // Create the reordered PDF
-      const pdfDoc = await PDFDocument.load(buffer);
-      const newPdf = await PDFDocument.create();
-      
-      // Copy each page according to the new order
-      for (const idx of pageOrder) {
-        const [copied] = await newPdf.copyPages(pdfDoc, [idx]);
-        if (rotations[idx]) copied.setRotation(rotations[idx]);
-        newPdf.addPage(copied);
-      }
-      
-      // Generate the new PDF
-      const newPdfBytes = await newPdf.save();
-      const newFile = new File([newPdfBytes], pdfFile.name || 'document.pdf', { type: 'application/pdf' });
-      
-      // Clean up before setting new file
-      setTextElements([]);
-      setHighlightElements([]);
-      setPageNumber(1);
-      setRotations({});
-      
-      // Update the PDF file (null first to clear references)
-      setPdfFile(null);
-      
-      // Wait for the component to release references to the old PDF
-      setTimeout(() => {
-        setPdfFile(newFile);
-        setIsProcessingReorder(false);
-        setShowReorderModal(false);
-      }, 100);
-      
-    } catch (error) {
-      console.error("Error reordering pages:", error);
-      setIsProcessingReorder(false);
-      setShowReorderModal(false);
-      
-      // Show error notification (you could add a toast/alert here)
-      alert("There was an error reordering pages. Please try again.");
-    }
   };
 
   return (
@@ -744,60 +589,6 @@ export default function Editor() {
                     <button onClick={handleDownloadCancel} className="editor-modal-btn cancel" disabled={isProcessingDownload}>Cancel</button>
                   </div>
                   {isProcessingDownload && <div className="editor-modal-status">Generating B&W PDF...</div>}
-                </div>
-              </div>
-            )}            {/* Reorder modal */}
-            {showReorderModal && !isProcessingReorder && (
-              <div className="editor-modal-bg">
-                <div className="editor-modal reorder-modal">
-                  <h3>Reorder Pages</h3>
-                  <div className="reorder-pages-list">
-                    {pageOrder.map((pageIdx, i) => (
-                      <div key={`${reorderKey}-${i}`}
-                        draggable
-                        data-idx={i}
-                        onDragStart={handleDragStart(i)}
-                        onDrop={handleDrop(i)}
-                        onDragOver={e => { e.preventDefault(); handleDragOver(e); }}
-                        onDragEnter={handleDragEnter(i)}
-                        onDragLeave={handleDragEnd}
-                        onDragEnd={handleDragEnd}
-                        onTouchStart={handleTouchStart(i)}
-                        onTouchMove={handleTouchMove(i)}
-                        onTouchEnd={handleTouchEnd(i)}
-                        className={`reorder-page-thumb${dragOverIdx === i || touchOverIdx === i ? ' drag-over' : ''}`}
-                      >
-                        <div className="reorder-page-preview">
-                          <Document file={pdfFile} loading={null}>
-                            <Page
-                              key={`preview-${reorderKey}-${i}`}
-                              pageNumber={pageIdx+1}
-                              width={60}
-                              height={80}
-                              renderTextLayer={false}
-                              renderAnnotationLayer={false}
-                              rotate={rotations[pageIdx] || 0}
-                              loading={null}
-                            />
-                          </Document>
-                        </div>
-                        <span className="reorder-page-label">Page {pageIdx+1}</span>
-                        <button onClick={() => handleRotatePage(pageIdx)} className="reorder-page-rotate">Rotate</button>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="editor-modal-btns">
-                    <button onClick={handleReorderConfirm} className="editor-modal-btn confirm">Confirm</button>
-                    <button onClick={()=>setShowReorderModal(false)} className="editor-modal-btn cancel">Cancel</button>
-                  </div>
-                </div>
-              </div>
-            )}
-            {isProcessingReorder && (
-              <div className="editor-modal-bg">
-                <div className="editor-modal reorder-modal">
-                  <h3>Reordering Pages...</h3>
-                  <div className="editor-modal-status">Processing, please wait.</div>
                 </div>
               </div>
             )}

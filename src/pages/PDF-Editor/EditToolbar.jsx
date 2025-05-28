@@ -6,7 +6,6 @@ const EDIT_TOOLS = [
   { icon: <FaFont />, label: 'Add Text', action: 'addText' },
   { icon: <FaHighlighter />, label: 'Highlight', action: 'highlight' },
   { icon: <FaEraser />, label: 'Erase', action: 'erase' },
-  { icon: <FaArrowLeft style={{transform: 'rotate(-90deg)'}} />, label: 'Reorder', action: 'reorder' }, // Reorder tool
 ];
 
 export default function EditToolbar({ onBack, onToolSelect, activeTool }) {

@@ -7,6 +7,27 @@
   transition: filter 0.4s;
 }
 
+/* Desktop/Tablet - Enhanced background */
+@media (min-width: 769px) {
+  .editor-bg {
+    background: linear-gradient(135deg, #1a1333 0%, #2d1b69 50%, #3a1c71 100%);
+    background-attachment: fixed;
+  }
+  
+  .editor-bg::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 20% 80%, rgba(157, 78, 221, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(199, 125, 255, 0.08) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 1;
+  }
+}
+
 .blur-bg {
   filter: blur(8px) brightness(0.8);
   pointer-events: none;
@@ -36,6 +57,19 @@
   min-width: 320px;
   max-width: 90vw;
   animation: glass-pop 0.7s cubic-bezier(.23,1.12,.72,1.01);
+}
+
+/* Desktop/Tablet - Enhanced modal */
+@media (min-width: 769px) {
+  .modal-content {
+    background: rgba(40, 30, 70, 0.7);
+    backdrop-filter: blur(15px);
+    border-radius: 28px;
+    padding: 4rem 3.5rem 3rem 3.5rem;
+    min-width: 450px;
+    border: 2px solid rgba(255,255,255,0.2);
+    box-shadow: 0 12px 48px rgba(31, 38, 135, 0.4);
+  }
 }
 
 @keyframes glass-pop {
@@ -91,6 +125,16 @@
   z-index: 10;
 }
 
+/* Desktop/Tablet - Enhanced header */
+@media (min-width: 769px) {
+  .editor-header {
+    padding: 3rem 0 2rem 0;
+    background: rgba(26, 19, 51, 0.3);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(157, 78, 221, 0.2);
+  }
+}
+
 .editor-title-animated {
   font-size: 2.5rem;
   font-weight: 800;
@@ -101,6 +145,20 @@
   color: transparent;
   animation: title-fade-in 1.2s cubic-bezier(.23,1.12,.72,1.01);
   text-shadow: 0 2px 16px #9d4edd33;
+  position: relative;
+  z-index: 2;
+}
+
+/* Desktop/Tablet - Enhanced title */
+@media (min-width: 769px) {
+  .editor-title-animated {
+    font-size: 3.2rem;
+    letter-spacing: 3px;
+    background: linear-gradient(135deg, #c77dff 0%, #9d4edd 50%, #6a11cb 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    text-shadow: 0 4px 24px rgba(157, 78, 221, 0.4);
+  }
 }
 @keyframes title-fade-in {
   0% { opacity: 0; letter-spacing: 0; }
@@ -113,6 +171,14 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  padding-right: 120px; /* Space for desktop toolbar */
+}
+
+/* Mobile - Remove right padding */
+@media (max-width: 768px) {
+  .editor-main {
+    padding-right: 0;
+  }
 }
 
 .pdf-placeholder {
@@ -160,6 +226,20 @@
   padding-bottom: 0;
 }
 
+/* Desktop/Tablet - Enhanced PDF container */
+@media (min-width: 769px) {
+  .pdfjs-preview-wrapper {
+    width: 600px;
+    height: 750px;
+    margin-top: 50px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 20px;
+    box-shadow: 0 8px 48px rgba(157, 78, 221, 0.35);
+    border: 2px solid rgba(157, 78, 221, 0.2);
+    backdrop-filter: blur(10px);
+  }
+}
+
 .pdfjs-preview-wrapper.bw-filter {
   filter: grayscale(1) contrast(1.2);
 }
@@ -199,6 +279,18 @@
   margin-top: 1.5rem;
 }
 
+/* Desktop/Tablet - Enhanced controls */
+@media (min-width: 769px) {
+  .pdfjs-controls {
+    gap: 2rem;
+    margin-top: 2rem;
+    padding: 1rem;
+    background: rgba(40, 30, 70, 0.3);
+    border-radius: 12px;
+    backdrop-filter: blur(8px);
+  }
+}
+
 .pdfjs-controls button {
   background: linear-gradient(90deg, #9d4edd 0%, #6a11cb 100%);
   color: #fff;
@@ -210,6 +302,22 @@
   cursor: pointer;
   box-shadow: 0 2px 8px #9d4edd33;
   transition: background 0.2s, transform 0.2s;
+}
+
+/* Desktop/Tablet - Enhanced control buttons */
+@media (min-width: 769px) {
+  .pdfjs-controls button {
+    padding: 0.6rem 1.8rem;
+    font-size: 1.1rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(157, 78, 221, 0.3);
+    transition: all 0.3s ease;
+  }
+  
+  .pdfjs-controls button:not(:disabled):hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 16px rgba(157, 78, 221, 0.4);
+  }
 }
 .pdfjs-controls button:disabled {
   background: #3a1c71;
@@ -226,40 +334,68 @@
    Editor Toolbar Styles
    ===================== */
 .editor-toolbar {
-  /* Layout and appearance */
+  /* Desktop/Tablet Layout */
   position: fixed;
-  left: 50%;
-  bottom: 0;
-  transform: translateX(-50%);
-  width: 100vw;
-  max-width: 600px;
-  background: rgba(40, 30, 70, 0.55);
-  border-radius: 24px 24px 0 0;
-  box-shadow: 0 -4px 32px #9d4edd22;
+  top: 20px;
+  right: 20px;
+  width: 80px;
+  background: rgba(40, 30, 70, 0.85);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(157, 78, 221, 0.3);
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  padding: 1.1rem 0 0.7rem 0;
+  padding: 1rem 0;
   z-index: 20;
-  border-top: 1.5px solid rgba(255,255,255,0.10);
-  backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(255,255,255,0.15);
+  backdrop-filter: blur(12px);
   animation: toolbar-pop 1.1s cubic-bezier(.23,1.12,.72,1.01);
-  gap: 2.2rem;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: thin; /* Firefox */
-  scrollbar-color: #9d4edd #2a174d; /* Firefox */
+  gap: 1.5rem;
+  overflow: visible;
 }
 
-/* Custom scrollbar for Webkit browsers */
-.editor-toolbar::-webkit-scrollbar {
-  height: 6px;
-  background: #2a174d;
+/* Mobile Layout Override */
+@media (max-width: 768px) {
+  .editor-toolbar {
+    /* Mobile Layout - Bottom positioned */
+    position: fixed;
+    left: 50%;
+    bottom: 0;
+    right: auto;
+    top: auto;
+    transform: translateX(-50%);
+    width: 100vw;
+    max-width: 600px;
+    background: rgba(40, 30, 70, 0.55);
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -4px 32px #9d4edd22;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 1.1rem 0 0.7rem 0;
+    z-index: 20;
+    border-top: 1.5px solid rgba(255,255,255,0.10);
+    backdrop-filter: blur(8px);
+    gap: 2.2rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: #9d4edd #2a174d; /* Firefox */
+  }
 }
-.editor-toolbar::-webkit-scrollbar-thumb {
-  background: #9d4edd;
-  border-radius: 4px;
+
+/* Custom scrollbar for Webkit browsers - Mobile only */
+@media (max-width: 768px) {
+  .editor-toolbar::-webkit-scrollbar {
+    height: 6px;
+    background: #2a174d;
+  }
+  .editor-toolbar::-webkit-scrollbar-thumb {
+    background: #9d4edd;
+    border-radius: 4px;
+  }
 }
 
 /* Toolbar tool (icon + label) */
@@ -273,30 +409,93 @@
   color: #e0d7f7;
   min-width: 60px;
   margin: 0 0.2rem;
+  padding: 0.8rem 0.5rem;
+  border-radius: 12px;
+}
+
+/* Desktop/Tablet specific toolbar styling */
+@media (min-width: 769px) {
+  .toolbar-tool {
+    min-width: 70px;
+    margin: 0;
+    padding: 1rem 0.5rem;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+  }
+  .toolbar-tool:hover {
+    background: rgba(157, 78, 221, 0.15);
+  }
+}
+
+/* Mobile specific toolbar styling */
+@media (max-width: 768px) {
+  .toolbar-tool {
+    min-width: 60px;
+    margin: 0 0.2rem;
+    padding: 0.8rem 0.5rem;
+  }
 }
 .toolbar-tool:hover .tool-icon {
   color: #9d4edd;
   transform: scale(1.18) rotate(-8deg);
 }
+
+/* Desktop/Tablet - Different hover behavior */
+@media (min-width: 769px) {
+  .toolbar-tool:hover .tool-icon {
+    color: #c77dff;
+    transform: scale(1.2);
+  }
+}
+
 .tool-icon {
   font-size: 1.5rem;
   margin-bottom: 0.1rem;
   transition: color 0.18s, transform 0.18s;
 }
+
+/* Desktop/Tablet - Larger icons */
+@media (min-width: 769px) {
+  .tool-icon {
+    font-size: 1.8rem;
+    margin-bottom: 0.3rem;
+  }
+}
+
 .tool-label {
   font-size: 0.95rem;
   font-weight: 500;
   letter-spacing: 0.5px;
   text-shadow: 0 1px 8px #9d4edd22;
+  text-align: center;
+}
+
+/* Desktop/Tablet - Smaller labels */
+@media (min-width: 769px) {
+  .tool-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
 }
 
 /* Highlight the active tool visually */
 .toolbar-tool.active-tool {
-  background: rgba(157, 78, 221, 0.13);
+  background: rgba(157, 78, 221, 0.25);
   border-radius: 12px;
-  color: #9d4edd;
-  box-shadow: 0 2px 8px #9d4edd22;
+  color: #c77dff;
+  box-shadow: 0 4px 16px rgba(157, 78, 221, 0.4);
   transform: scale(1.08);
+}
+
+/* Desktop/Tablet - Enhanced active state */
+@media (min-width: 769px) {
+  .toolbar-tool.active-tool {
+    background: rgba(157, 78, 221, 0.3);
+    border: 2px solid rgba(199, 125, 255, 0.5);
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(157, 78, 221, 0.5);
+  }
 }
 .toolbar-tool.active-tool .tool-icon {
   color: #9d4edd;
@@ -311,12 +510,13 @@
 /* =====================
    Responsive Toolbar
    ===================== */
-@media (max-width: 700px) {
+@media (max-width: 768px) {
   .editor-toolbar {
     max-width: 118vw;
     border-radius: 18px 18px 0 0;
     padding: 0.7rem 0 0.5rem 0;
   }
+  
   .editor-main .pdf-placeholder {
     width: 90vw;
     height: 60vw;
@@ -353,6 +553,20 @@
   box-shadow: 0 1px 4px #0002;
   font-size: 15px;
 }
+
+/* Desktop/Tablet - Enhanced indicators */
+@media (min-width: 769px) {
+  .editor-indicator {
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 16px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+}
 .editor-indicator.delete-mode {
   background: #ffeded;
   color: #c00;
@@ -379,6 +593,20 @@
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+/* Desktop/Tablet - Repositioned color picker */
+@media (min-width: 769px) {
+  .color-picker {
+    top: 20px;
+    right: 120px; /* Avoid overlapping with toolbar */
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(8px);
+    border-radius: 8px;
+    padding: 8px 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border: 1px solid rgba(157, 78, 221, 0.2);
+  }
 }
 .color-picker label {
   font-size: 12px;
@@ -449,7 +677,7 @@
   z-index: 10;
 }
 
-/* --- Download/Reorder Modal Styles --- */
+/* --- Download Modal Styles --- */
 .editor-modal-bg {
   position: fixed;
   left: 0;
@@ -472,8 +700,7 @@
   flex-direction: column;
   align-items: center;
 }
-.editor-modal.download-modal h3,
-.editor-modal.reorder-modal h3 {
+.editor-modal.download-modal h3 {
   margin-bottom: 16px;
   color: #6c2bd7;
 }
@@ -514,54 +741,6 @@
   font-weight: 600;
 }
 
-/* --- Reorder Modal Page Thumbnails --- */
-.reorder-pages-list {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  margin-bottom: 18px;
-}
-.reorder-page-thumb {
-  border: 2px solid #9d4edd;
-  border-radius: 6px;
-  padding: 4px;
-  background: #f8f6ff;
-  min-width: 80px;
-  text-align: center;
-  cursor: grab;
-  position: relative;
-  transition: box-shadow 0.2s, border 0.2s;
-}
-.reorder-page-thumb.drag-over {
-  border: 3px dashed #6a11cb;
-  box-shadow: 0 0 0 4px #c77dff44;
-}
-.reorder-page-preview {
-  width: 60px;
-  height: 80px;
-  margin: 0 auto;
-  background: #eee;
-  border-radius: 4px;
-  overflow: hidden;
-  position: relative;
-}
-.reorder-page-label {
-  font-weight: 600;
-  font-size: 13px;
-  display: block;
-  margin-top: 4px;
-}
-.reorder-page-rotate {
-  margin-top: 2px;
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 4px;
-  border: 1px solid #9d4edd;
-  background: #f3eaff;
-  color: #6c2bd7;
-  cursor: pointer;
-}
-
 /* --- Editor Page Navigation --- */
 .editor-page-nav {
   display: flex;
@@ -571,11 +750,37 @@
   margin: 0.5rem 0 0.5rem 0;
   padding: 0.5rem 0;
   background: rgba(40, 30, 70, 0.7);
-  border-radius: 12px 12px 0 0;
+  border-radius: 12px;
   box-shadow: 0 2px 12px 0 rgba(31, 38, 135, 0.10);
   position: relative;
   z-index: 10;
   margin-bottom: 0.5rem;
+}
+
+/* Desktop/Tablet - Enhanced page navigation */
+@media (min-width: 769px) {
+  .editor-page-nav {
+    background: rgba(40, 30, 70, 0.85);
+    border-radius: 16px;
+    padding: 1rem 2rem;
+    gap: 2rem;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 4px 20px rgba(157, 78, 221, 0.2);
+    margin-bottom: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .editor-page-nav {
+    position: static;
+    left: unset;
+    right: unset;
+    bottom: unset;
+    border-radius: 12px 12px 0 0;
+    z-index: 10;
+    margin-bottom: 0.5rem;
+  }
 }
 
 @media (max-width: 600px) {
@@ -603,11 +808,38 @@
   box-shadow: 0 2px 8px 0 rgba(127, 83, 172, 0.10);
 }
 
+/* Desktop/Tablet - Enhanced navigation buttons */
+@media (min-width: 769px) {
+  .page-nav-btn {
+    padding: 0.7rem 1.8rem;
+    font-size: 1.1rem;
+    border-radius: 8px;
+    background: linear-gradient(90deg, #c77dff 0%, #9d4edd 100%);
+    box-shadow: 0 4px 12px rgba(157, 78, 221, 0.3);
+    transition: all 0.3s ease;
+  }
+  
+  .page-nav-btn:not(:disabled):hover {
+    background: linear-gradient(90deg, #9d4edd 0%, #c77dff 100%);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 6px 16px rgba(157, 78, 221, 0.4);
+  }
+}
+
 .page-nav-btn:disabled {
   background: #bdbdbd;
   color: #eee;
   cursor: not-allowed;
   opacity: 0.7;
+}
+
+/* Desktop/Tablet - Enhanced disabled state */
+@media (min-width: 769px) {
+  .page-nav-btn:disabled {
+    background: rgba(189, 189, 189, 0.8);
+    transform: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  }
 }
 
 .page-nav-btn:not(:disabled):hover {
@@ -621,4 +853,58 @@
   font-weight: 500;
   letter-spacing: 0.03em;
   padding: 0 0.5rem;
+}
+
+/* Desktop/Tablet - Enhanced page info */
+@media (min-width: 769px) {
+  .page-nav-info {
+    font-size: 1.3rem;
+    font-weight: 600;
+    padding: 0 1rem;
+    background: rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+}
+
+/* =====================
+   Desktop-Specific Animations
+   ===================== */
+@media (min-width: 769px) {
+  /* Toolbar entrance animation for desktop */
+  @keyframes toolbar-slide-in {
+    0% { 
+      transform: translateX(100px); 
+      opacity: 0; 
+    }
+    100% { 
+      transform: translateX(0); 
+      opacity: 1; 
+    }
+  }
+  
+  .editor-toolbar {
+    animation: toolbar-slide-in 0.8s cubic-bezier(.23,1.12,.72,1.01);
+  }
+  
+  /* Subtle floating animation for PDF container */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+  }
+  
+  .pdfjs-preview-wrapper:hover {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  /* Enhanced glass effect on hover for desktop */  /* .toolbar-tool:hover {
+    backdrop-filter: blur(15px);
+    background: rgba(157, 78, 221, 0.2);
+  } */
+  
+  /* Desktop-specific glow effect */
+  .editor-title-animated {
+    filter: drop-shadow(0 0 20px rgba(157, 78, 221, 0.3));
+  }
 }

@@ -1,12 +1,3 @@
-const CACHE_NAME = 'pdf-editor-cache-v1';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/logo-removebg-preview.png',
-  '/pdf.worker.js',
-  // Add more assets as needed
-];
-
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
