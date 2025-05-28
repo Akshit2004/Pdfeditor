@@ -833,12 +833,11 @@ export default function Editor() {
                           zIndex: draggedPage === index ? 1000 : 1
                         }}
                       >
-                        <div className="reorder-page-number">Page {pageNum}</div>
-                        <div className="reorder-page-preview">
+                        <div className="reorder-page-number">Page {pageNum}</div>                        <div className="reorder-page-preview">
                           <Document file={pdfFile} className="reorder-pdf-document">
                             <Page 
                               pageNumber={pageNum} 
-                              width={100}
+                              scale={0.5}
                               className="reorder-pdf-page"
                               renderTextLayer={false}
                               renderAnnotationLayer={false}
