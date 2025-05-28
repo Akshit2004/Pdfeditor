@@ -13,9 +13,11 @@
   [![pdf-lib](https://img.shields.io/badge/pdf--lib-1.17.1-9d4edd?style=for-the-badge&logo=adobe&logoColor=white)](https://pdf-lib.js.org/)
   [![License](https://img.shields.io/badge/License-MIT-brightgreen?style=for-the-badge)](LICENSE)
   
-  [![Responsive](https://img.shields.io/badge/📱_Responsive-Yes-5f5fff?style=for-the-badge)](https://github.com)
-  [![PWA Ready](https://img.shields.io/badge/⚡_PWA_Ready-Yes-orange?style=for-the-badge)](https://github.com)
-  [![Zero Backend](https://img.shields.io/badge/🔥_Zero_Backend-Client_Side-red?style=for-the-badge)](https://github.com)
+  [![Responsive](https://img.shields.io/badge/📱_Responsive-Yes-5f5fff?style=for-the-badge)](https://github.com/Akshit2004/Pdfeditor)
+  [![PWA Ready](https://img.shields.io/badge/⚡_PWA_Ready-Yes-orange?style=for-the-badge)](https://github.com/Akshit2004/Pdfeditor)
+  [![Zero Backend](https://img.shields.io/badge/🔥_Zero_Backend-Client_Side-red?style=for-the-badge)](https://github.com/Akshit2004/Pdfeditor)
+
+  [![GitHub Repo](https://img.shields.io/badge/🔗_Repository-Akshit2004%2FPdfeditor-6e40c9?style=for-the-badge&logo=github)](https://github.com/Akshit2004/Pdfeditor?tab=readme-ov-file)
 
 </div>
 
@@ -57,66 +59,66 @@
 <table align="center">
 <tr>
   <td align="center" width="25%">
-    <img src="https://img.icons8.com/fluency/96/000000/glass.png" width="64"/><br/>
+    <div style="font-size: 64px;">🌈</div><br/>
     <b>🌈 Glassmorphic UI</b><br/>
     <sub>Modern translucent design with blur effects</sub>
   </td>
   <td align="center" width="25%">
-    <img src="https://img.icons8.com/fluency/96/000000/upload.png" width="64"/><br/>
+    <div style="font-size: 64px;">📤</div><br/>
     <b>📤 Smart Upload</b><br/>
     <sub>Drag & drop with instant preview</sub>
   </td>
   <td align="center" width="25%">
-    <img src="https://img.icons8.com/fluency/96/000000/preview.png" width="64"/><br/>
+    <div style="font-size: 64px;">🖼️</div><br/>
     <b>🖼️ Live Preview</b><br/>
     <sub>Real-time PDF rendering</sub>
   </td>
   <td align="center" width="25%">
-    <img src="https://img.icons8.com/fluency/96/000000/drag-and-drop.png" width="64"/><br/>
+    <div style="font-size: 64px;">🧩</div><br/>
     <b>🧩 Page Reordering</b><br/>
     <sub>Intuitive drag & drop interface</sub>
   </td>
 </tr>
 <tr>
   <td align="center">
-    <img src="https://img.icons8.com/fluency/96/000000/delete.png" width="64"/><br/>
+    <div style="font-size: 64px;">🗑️</div><br/>
     <b>🗑️ Page Management</b><br/>
     <sub>Delete unwanted pages instantly</sub>
   </td>
   <td align="center">
-    <img src="https://img.icons8.com/fluency/96/000000/rotate.png" width="64"/><br/>
+    <div style="font-size: 64px;">🔄</div><br/>
     <b>🔄 Smart Rotation</b><br/>
     <sub>90° rotation with preview</sub>
   </td>
   <td align="center">
-    <img src="https://img.icons8.com/fluency/96/000000/edit.png" width="64"/><br/>
+    <div style="font-size: 64px;">🖊️</div><br/>
     <b>🖊️ Rich Annotations</b><br/>
     <sub>Text, highlights & more</sub>
   </td>
   <td align="center">
-    <img src="https://img.icons8.com/fluency/96/000000/filter.png" width="64"/><br/>
+    <div style="font-size: 64px;">🪄</div><br/>
     <b>🪄 Smart Filters</b><br/>
     <sub>Grayscale, sepia, brightness</sub>
   </td>
 </tr>
 <tr>
   <td align="center">
-    <img src="https://img.icons8.com/fluency/96/000000/download.png" width="64"/><br/>
+    <div style="font-size: 64px;">💾</div><br/>
     <b>💾 Export Options</b><br/>
     <sub>Custom filename & formats</sub>
   </td>
   <td align="center">
-    <img src="https://img.icons8.com/fluency/96/000000/lightning-bolt.png" width="64"/><br/>
+    <div style="font-size: 64px;">⚡</div><br/>
     <b>⚡ Lightning Fast</b><br/>
     <sub>Optimized performance</sub>
   </td>
   <td align="center">
-    <img src="https://img.icons8.com/fluency/96/000000/smartphone.png" width="64"/><br/>
+    <div style="font-size: 64px;">📱</div><br/>
     <b>📱 Mobile Ready</b><br/>
     <sub>Touch-optimized interface</sub>
   </td>
   <td align="center">
-    <img src="https://img.icons8.com/fluency/96/000000/merge-files.png" width="64"/><br/>
+    <div style="font-size: 64px;">🔗</div><br/>
     <b>🔗 PDF Merger</b><br/>
     <sub>Combine multiple PDFs</sub>
   </td>
@@ -169,7 +171,7 @@ graph TD
 
 ```bash
 # 📥 Clone the repository
-git clone https://github.com/yourusername/pdfusion.git
+git clone https://github.com/akshit2004/pdfusion.git
 cd pdfusion
 
 # 📦 Install dependencies
