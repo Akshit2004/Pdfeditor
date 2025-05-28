@@ -31,10 +31,20 @@
   <h2>🎬 Live Demo</h2>
   <p><em>Experience PDFusion in action</em></p>
   
-  ```
-  🌐 Live Demo: Coming Soon!
-  📱 Try it on your mobile device for the full responsive experience
-  ```
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 15px; margin: 20px 0;">
+    <p style="margin: 0; font-size: 18px; color: white;">
+      <strong>🌐 <a href="https://pdfeditor-henna.vercel.app" target="_blank" style="color: #FFD700; text-decoration: none;">Try PDFusion Live!</a></strong>
+    </p>
+    <p style="margin: 5px 0 0 0; color: #E0E0E0; font-size: 14px;">
+      📱 Fully responsive • 🚀 No installation required • 🔒 100% secure
+    </p>
+  </div>
+  
+  <p>
+    <a href="https://pdfeditor-henna.vercel.app" target="_blank">
+      <img src="https://img.shields.io/badge/🚀_Live_Demo-Visit_Now-FF6B6B?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo"/>
+    </a>
+  </p>
   
 </div>
 
