@@ -7,6 +7,7 @@ const FILTER_TOOLS = [
   { icon: <FaTint />, label: 'Sepia', action: 'sepia' },
   { icon: <FaSun />, label: 'Brighten', action: 'brighten' },
   { icon: <FaMoon />, label: 'Darken', action: 'darken' },
+  { icon: <span style={{fontWeight:600}}>✕</span>, label: 'Remove Filter', action: 'none' }, // Add clear filter option
 ];
 
 export default function FilterToolbar({ onBack, onToolSelect, activeTool }) {

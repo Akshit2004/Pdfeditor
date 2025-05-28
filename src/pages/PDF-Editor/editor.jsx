@@ -883,13 +883,12 @@ export default function Editor() {
             <FilterToolbar
               onBack={() => {
                 setShowFilterToolbar(false);
-                // Do not clear the filter selection here!
-                // setActiveFilterTool(null); // <-- Remove this line to preserve filter
               }}
               onToolSelect={tool => {
                 if (tool === 'back') {
                   setShowFilterToolbar(false);
-                  // setActiveFilterTool(null); // <-- Remove this line to preserve filter
+                } else if (tool === 'none') {
+                  setActiveFilterTool(null); // Remove filter
                 } else {
                   setActiveFilterTool(tool);
                 }
