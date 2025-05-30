@@ -307,14 +307,12 @@ const handleEditToolSelect = (tool) => {
 ### 📊 **Performance Metrics**
 - ⚡ **Bundle Size:** ~2.1MB (gzipped)
 - 🚀 **First Paint:** <1.2s
-- 📱 **Mobile Score:** 95/100
 - 🖥️ **Desktop Score:** 98/100
 - ♿ **Accessibility:** AA Compliant
 
 ### 🔒 **Security & Privacy**
 - 🛡️ **100% Client-Side Processing** - Your PDFs never leave your device
 - 🚫 **No Server Uploads** - Complete privacy protection
-- 🔐 **No Data Collection** - Zero tracking or analytics
 - ✅ **GDPR Compliant** - Privacy by design
 
 ### 🌐 **Browser Support**
@@ -458,4 +456,3 @@ git push origin feature/amazing-feature
   </p>
   
 </div>
-
