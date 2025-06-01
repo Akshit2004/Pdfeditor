@@ -107,28 +107,47 @@ export default function Editor() {
       const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
       const pdf = await loadingTask.promise;
       const newPdfDoc = await PDFDocument.create();
-      
-      for (let i = 0; i < pdf.numPages; i++) {
+        for (let i = 0; i < pdf.numPages; i++) {
         const pageNum = i + 1;
         const page = await pdf.getPage(pageNum);
-        const viewport = page.getViewport({ scale: 2 });
+        
+        // Use scale 1.5 instead of 2 for better performance while maintaining quality
+        const viewport = page.getViewport({ scale: 1.5 });
         const canvas = document.createElement('canvas');
         canvas.width = viewport.width;
         canvas.height = viewport.height;
         const ctx = canvas.getContext('2d');
         
         // Render the original PDF page
-        await page.render({ canvasContext: ctx, viewport }).promise;
-        
-        // Add highlights for this page
+        await page.render({ canvasContext: ctx, viewport }).promise;        // Add highlights for this page
         const pageHighlights = highlightElements.filter(el => el.page === pageNum);
         pageHighlights.forEach(highlight => {
           ctx.save();
           ctx.globalAlpha = 0.4;
           ctx.fillStyle = highlight.color;
-          // Scale coordinates from display to canvas size
-          const scaleX = viewport.width / (pdfContainerRef.current?.offsetWidth || viewport.width);
-          const scaleY = viewport.height / (pdfContainerRef.current?.offsetHeight || viewport.height);
+          
+          // Calculate proper scaling based on the viewport and container dimensions
+          // Only use displayed page element if we're exporting the currently visible page
+          let scaleX = 1;
+          let scaleY = 1;
+          
+          if (pageNum === pageNumber && pdfContainerRef.current) {
+            // For the currently displayed page, calculate scale from actual display dimensions
+            const pdfPageElement = document.querySelector('.pdfjs-page canvas');
+            if (pdfPageElement) {
+              const displayedWidth = pdfPageElement.offsetWidth;
+              const displayedHeight = pdfPageElement.offsetHeight;
+              scaleX = viewport.width / displayedWidth;
+              scaleY = viewport.height / displayedHeight;
+            }
+          } else {
+            // For other pages, use a standard scale ratio
+            // Assume standard display scaling (typical web display is around 96 DPI)
+            const standardDisplayScale = 1.5; // This matches our viewport scale
+            scaleX = standardDisplayScale;
+            scaleY = standardDisplayScale;
+          }
+          
           ctx.fillRect(
             highlight.x * scaleX,
             highlight.y * scaleY,
@@ -136,17 +155,38 @@ export default function Editor() {
             highlight.height * scaleY
           );
           ctx.restore();
-        });
-        
-        // Add text elements for this page
+        });          // Add text elements for this page
         const pageTexts = textElements.filter(el => el.page === pageNum);
         pageTexts.forEach(textEl => {
           ctx.save();
           ctx.fillStyle = textEl.color || '#000000';
-          ctx.font = '16px Arial'; // You can make this configurable
-          // Scale coordinates from display to canvas size
-          const scaleX = viewport.width / (pdfContainerRef.current?.offsetWidth || viewport.width);
-          const scaleY = viewport.height / (pdfContainerRef.current?.offsetHeight || viewport.height);
+          
+          // Calculate proper scaling based on the viewport and container dimensions
+          // Only use displayed page element if we're exporting the currently visible page
+          let scaleX = 1;
+          let scaleY = 1;
+          
+          if (pageNum === pageNumber && pdfContainerRef.current) {
+            // For the currently displayed page, calculate scale from actual display dimensions
+            const pdfPageElement = document.querySelector('.pdfjs-page canvas');
+            if (pdfPageElement) {
+              const displayedWidth = pdfPageElement.offsetWidth;
+              const displayedHeight = pdfPageElement.offsetHeight;
+              scaleX = viewport.width / displayedWidth;
+              scaleY = viewport.height / displayedHeight;
+            }
+          } else {
+            // For other pages, use a standard scale ratio
+            // Assume standard display scaling (typical web display is around 96 DPI)
+            const standardDisplayScale = 1.5; // This matches our viewport scale
+            scaleX = standardDisplayScale;
+            scaleY = standardDisplayScale;
+          }
+          
+          // Scale font size proportionally
+          const scaledFontSize = Math.round(16 * Math.min(scaleX, scaleY));
+          ctx.font = `${scaledFontSize}px Arial`;
+          
           ctx.fillText(
             textEl.content,
             textEl.position.x * scaleX,
