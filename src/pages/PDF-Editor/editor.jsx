@@ -90,55 +90,102 @@ export default function Editor() {
     setDownloadFileName(pdfFile.name || 'document.pdf');
     setShowDownloadPopup(true);
   };
-
   const handleDownloadConfirm = async () => {
     let fileName = downloadFileName.trim();
     if (!fileName) return;
     if (!fileName.toLowerCase().endsWith('.pdf')) fileName += '.pdf';
-    if (bwFilter || activeFilterTool) {
+    
+    // Check if we have any annotations (text or highlights) or filters to apply
+    const hasAnnotations = textElements.length > 0 || highlightElements.length > 0;
+    const hasFilters = bwFilter || activeFilterTool;
+    
+    if (hasAnnotations || hasFilters) {
       setIsProcessingDownload(true);
-      // True filtered export: render each page to canvas, apply filter, and re-embed
+      // Enhanced export: render each page to canvas, add annotations, apply filters, and re-embed
       const { PDFDocument } = await import('pdf-lib');
       const arrayBuffer = await pdfFile.arrayBuffer();
       const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
       const pdf = await loadingTask.promise;
       const newPdfDoc = await PDFDocument.create();
+      
       for (let i = 0; i < pdf.numPages; i++) {
-        const page = await pdf.getPage(i + 1);
+        const pageNum = i + 1;
+        const page = await pdf.getPage(pageNum);
         const viewport = page.getViewport({ scale: 2 });
         const canvas = document.createElement('canvas');
         canvas.width = viewport.width;
         canvas.height = viewport.height;
         const ctx = canvas.getContext('2d');
+        
+        // Render the original PDF page
         await page.render({ canvasContext: ctx, viewport }).promise;
-        // Apply filter to canvas
-        let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        if (activeFilterTool === 'grayscale' || bwFilter) {
-          for (let j = 0; j < imgData.data.length; j += 4) {
-            const avg = 0.299 * imgData.data[j] + 0.587 * imgData.data[j + 1] + 0.114 * imgData.data[j + 2];
-            imgData.data[j] = imgData.data[j + 1] = imgData.data[j + 2] = avg;
+        
+        // Add highlights for this page
+        const pageHighlights = highlightElements.filter(el => el.page === pageNum);
+        pageHighlights.forEach(highlight => {
+          ctx.save();
+          ctx.globalAlpha = 0.4;
+          ctx.fillStyle = highlight.color;
+          // Scale coordinates from display to canvas size
+          const scaleX = viewport.width / (pdfContainerRef.current?.offsetWidth || viewport.width);
+          const scaleY = viewport.height / (pdfContainerRef.current?.offsetHeight || viewport.height);
+          ctx.fillRect(
+            highlight.x * scaleX,
+            highlight.y * scaleY,
+            highlight.width * scaleX,
+            highlight.height * scaleY
+          );
+          ctx.restore();
+        });
+        
+        // Add text elements for this page
+        const pageTexts = textElements.filter(el => el.page === pageNum);
+        pageTexts.forEach(textEl => {
+          ctx.save();
+          ctx.fillStyle = textEl.color || '#000000';
+          ctx.font = '16px Arial'; // You can make this configurable
+          // Scale coordinates from display to canvas size
+          const scaleX = viewport.width / (pdfContainerRef.current?.offsetWidth || viewport.width);
+          const scaleY = viewport.height / (pdfContainerRef.current?.offsetHeight || viewport.height);
+          ctx.fillText(
+            textEl.content,
+            textEl.position.x * scaleX,
+            textEl.position.y * scaleY
+          );
+          ctx.restore();
+        });
+        
+        // Apply filters to canvas if needed
+        if (hasFilters) {
+          let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          if (activeFilterTool === 'grayscale' || bwFilter) {
+            for (let j = 0; j < imgData.data.length; j += 4) {
+              const avg = 0.299 * imgData.data[j] + 0.587 * imgData.data[j + 1] + 0.114 * imgData.data[j + 2];
+              imgData.data[j] = imgData.data[j + 1] = imgData.data[j + 2] = avg;
+            }
+          } else if (activeFilterTool === 'sepia') {
+            for (let j = 0; j < imgData.data.length; j += 4) {
+              const r = imgData.data[j], g = imgData.data[j+1], b = imgData.data[j+2];
+              imgData.data[j]     = Math.min(255, 0.393*r + 0.769*g + 0.189*b);
+              imgData.data[j + 1] = Math.min(255, 0.349*r + 0.686*g + 0.168*b);
+              imgData.data[j + 2] = Math.min(255, 0.272*r + 0.534*g + 0.131*b);
+            }
+          } else if (activeFilterTool === 'brighten') {
+            for (let j = 0; j < imgData.data.length; j += 4) {
+              imgData.data[j]     = Math.min(255, imgData.data[j] * 1.3);
+              imgData.data[j + 1] = Math.min(255, imgData.data[j + 1] * 1.3);
+              imgData.data[j + 2] = Math.min(255, imgData.data[j + 2] * 1.3);
+            }
+          } else if (activeFilterTool === 'darken') {
+            for (let j = 0; j < imgData.data.length; j += 4) {
+              imgData.data[j]     = imgData.data[j] * 0.7;
+              imgData.data[j + 1] = imgData.data[j + 1] * 0.7;
+              imgData.data[j + 2] = imgData.data[j + 2] * 0.7;
+            }
           }
-        } else if (activeFilterTool === 'sepia') {
-          for (let j = 0; j < imgData.data.length; j += 4) {
-            const r = imgData.data[j], g = imgData.data[j+1], b = imgData.data[j+2];
-            imgData.data[j]     = Math.min(255, 0.393*r + 0.769*g + 0.189*b);
-            imgData.data[j + 1] = Math.min(255, 0.349*r + 0.686*g + 0.168*b);
-            imgData.data[j + 2] = Math.min(255, 0.272*r + 0.534*g + 0.131*b);
-          }
-        } else if (activeFilterTool === 'brighten') {
-          for (let j = 0; j < imgData.data.length; j += 4) {
-            imgData.data[j]     = Math.min(255, imgData.data[j] * 1.3);
-            imgData.data[j + 1] = Math.min(255, imgData.data[j + 1] * 1.3);
-            imgData.data[j + 2] = Math.min(255, imgData.data[j + 2] * 1.3);
-          }
-        } else if (activeFilterTool === 'darken') {
-          for (let j = 0; j < imgData.data.length; j += 4) {
-            imgData.data[j]     = imgData.data[j] * 0.7;
-            imgData.data[j + 1] = imgData.data[j + 1] * 0.7;
-            imgData.data[j + 2] = imgData.data[j + 2] * 0.7;
-          }
+          ctx.putImageData(imgData, 0, 0);
         }
-        ctx.putImageData(imgData, 0, 0);
+        
         const pngUrl = canvas.toDataURL('image/png');
         const pngBytes = dataURLToUint8Array(pngUrl);
         const img = await newPdfDoc.embedPng(pngBytes);
@@ -146,6 +193,7 @@ export default function Editor() {
         const pdfPage = newPdfDoc.addPage([pageDims.width, pageDims.height]);
         pdfPage.drawImage(img, { x: 0, y: 0, width: pageDims.width, height: pageDims.height });
       }
+      
       const newPdfBytes = await newPdfDoc.save();
       const blob = new Blob([newPdfBytes], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
@@ -161,6 +209,7 @@ export default function Editor() {
         setShowDownloadPopup(false);
       }, 100);
     } else {
+      // Simple export for PDFs without annotations or filters
       const url = URL.createObjectURL(pdfFile);
       const a = document.createElement('a');
       a.href = url;
@@ -793,7 +842,7 @@ export default function Editor() {
                     </button>
                     <button onClick={handleDownloadCancel} className="editor-modal-btn cancel" disabled={isProcessingDownload}>Cancel</button>
                   </div>
-                  {isProcessingDownload && <div className="editor-modal-status">Generating B&W PDF...</div>}
+                  {isProcessingDownload && <div className="editor-modal-status">Processing PDF...</div>}
                 </div>
               </div>
             )}            {/* Reorder pages modal */}
