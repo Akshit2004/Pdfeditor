@@ -57,11 +57,15 @@ export default function Editor() {
   const pdfContainerRef = useRef(null);
   const [bwFilter, setBwFilter] = useState(false);
   const [isProcessingDownload, setIsProcessingDownload] = useState(false);
-
   // Download PDF functionality with styled popup menu
   const [showDownloadPopup, setShowDownloadPopup] = useState(false);
   const [downloadFileName, setDownloadFileName] = useState('');
   const [rotations, setRotations] = useState({}); // {pageIdx: rotation}
+    // Upload animation states
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [dragOver, setDragOver] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
 
   const [undoStack, setUndoStack] = useState([]); // For revert/undo  // Reorder pages state
   const [showReorderModal, setShowReorderModal] = useState(false);
@@ -266,23 +270,103 @@ export default function Editor() {
 
   const handleDownloadCancel = () => {
     setShowDownloadPopup(false);
-  };
-
-  const handleFileChange = (e) => {
+  };  const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (file && file.type === 'application/pdf') {
-      setPdfFile(file);
-      setShowModal(false);
-      setPageNumber(1);
+      setIsUploading(true);
+      setUploadProgress(0);
+      setUploadSuccess(false);
+      
+      // Animate progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + Math.random() * 15;
+        });
+      }, 100);
+      
+      // Simulate processing time for smooth UX
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      setUploadProgress(100);
+      setUploadSuccess(true);
+      
+      setTimeout(() => {
+        setPdfFile(file);
+        setShowModal(false);
+        setPageNumber(1);
+        setIsUploading(false);
+        setUploadProgress(0);
+        setUploadSuccess(false);
+      }, 1200);
     }
   };
 
   function onDocumentLoadSuccess({ numPages }) {
     setNumPages(numPages);
   }
-
   const handleUploadClick = () => {
     fileInputRef.current.click();
+  };
+
+  // Drag and drop handlers
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0 && files[0].type === 'application/pdf') {
+      const file = files[0];
+      setIsUploading(true);
+      setUploadProgress(0);
+      setUploadSuccess(false);
+      
+      // Animate progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + Math.random() * 15;
+        });
+      }, 100);
+      
+      // Simulate processing time for smooth UX
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      setUploadProgress(100);
+      setUploadSuccess(true);
+      
+      setTimeout(() => {
+        setPdfFile(file);
+        setShowModal(false);
+        setPageNumber(1);
+        setIsUploading(false);
+        setUploadProgress(0);
+        setUploadSuccess(false);
+      }, 1200);
+    }
   };
 
   const handlePageChange = (newPage) => {
@@ -662,16 +746,61 @@ export default function Editor() {
   if (activeFilterTool === 'darken') pdfFilter = 'brightness(0.7)';
 
   return (
-    <div className="editor-bg">
-      {showModal && (
+    <div className="editor-bg">      {showModal && (
         <div className="glass-modal">
           <div className="modal-content">
-            <FaFileUpload className="modal-upload-icon" />
-            <h2 className="modal-title">Upload your PDF</h2>
-            <p className="modal-desc">Drag & drop or click to select a PDF file</p>
-            <button className="modal-upload-btn" onClick={handleUploadClick}>
-              Choose PDF
-            </button>
+            {!isUploading ? (
+              <>
+                <div 
+                  className={`upload-drop-zone ${dragOver ? 'drag-over' : ''}`}
+                  onDragEnter={handleDragEnter}
+                  onDragLeave={handleDragLeave}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                >
+                  <FaFileUpload className="modal-upload-icon" />
+                  <h2 className="modal-title">Upload your PDF</h2>
+                  <p className="modal-desc">
+                    {dragOver ? 'Drop your PDF file here!' : 'Drag & drop or click to select a PDF file'}
+                  </p>
+                  <button 
+                    className={`modal-upload-btn ${dragOver ? 'drag-active' : ''}`} 
+                    onClick={handleUploadClick}
+                  >
+                    Choose PDF
+                  </button>
+                </div>
+              </>            ) : (
+              <div className="upload-progress-container">
+                {!uploadSuccess ? (
+                  <>
+                    <div className="upload-spinner">
+                      <div className="spinner-ring"></div>
+                      <FaFileUpload className="spinner-icon" />
+                    </div>
+                    <h3 className="upload-title">Uploading PDF...</h3>
+                    <div className="progress-bar">
+                      <div 
+                        className="progress-fill" 
+                        style={{ width: `${uploadProgress}%` }}
+                      ></div>
+                    </div>
+                    <p className="upload-percentage">{Math.round(uploadProgress)}%</p>
+                  </>
+                ) : (
+                  <div className="upload-success">
+                    <div className="success-checkmark">
+                      <svg viewBox="0 0 52 52" className="checkmark">
+                        <circle className="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+                        <path className="checkmark-check" fill="none" d="m14.1 27.2l7.1 7.2 16.7-16.8"/>
+                      </svg>
+                    </div>
+                    <h3 className="success-title">Upload Complete!</h3>
+                    <p className="success-message">Your PDF is ready to edit</p>
+                  </div>
+                )}
+              </div>
+            )}
             <input
               type="file"
               accept="application/pdf"

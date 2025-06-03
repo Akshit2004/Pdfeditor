@@ -73,8 +73,20 @@
 }
 
 @keyframes glass-pop {
-  0% { transform: scale(0.7) translateY(40px); opacity: 0; }
-  100% { transform: scale(1) translateY(0); opacity: 1; }
+  0% { 
+    transform: scale(0.7) translateY(40px); 
+    opacity: 0; 
+    backdrop-filter: blur(0px);
+  }
+  50% {
+    transform: scale(1.05) translateY(-5px);
+    opacity: 0.8;
+  }
+  100% { 
+    transform: scale(1) translateY(0); 
+    opacity: 1; 
+    backdrop-filter: blur(15px);
+  }
 }
 
 .modal-upload-icon {
@@ -109,11 +121,30 @@
   font-weight: 600;
   cursor: pointer;
   box-shadow: 0 2px 16px #6a82fb33;
-  transition: background 0.2s, transform 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
 }
+
+.modal-upload-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.modal-upload-btn:hover::before {
+  left: 100%;
+}
+
 .modal-upload-btn:hover {
   background: linear-gradient(90deg, #fc5c7d 0%, #6a82fb 100%);
   transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 8px 25px rgba(106, 130, 251, 0.4);
 }
 
 .editor-header {
@@ -174,10 +205,12 @@
   padding-right: 120px; /* Space for desktop toolbar */
 }
 
-/* Mobile - Remove right padding */
+/* Mobile - Remove right padding and ensure proper layout */
 @media (max-width: 768px) {
   .editor-main {
     padding-right: 0;
+    padding-bottom: 140px; /* Space for mobile toolbar */
+    overflow-x: hidden; /* Prevent horizontal overflow */
   }
 }
 
@@ -214,34 +247,19 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(255,255,255,0.07);
-  border-radius: 18px;
-  box-shadow: 0 4px 32px #6a82fb22;
-  border: 1.5px solid rgba(106, 130, 251, 0.13);
-  animation: fade-in 1.2s;
   position: relative;
-  padding-bottom: 0;
   margin-top: 40px;
-  /* Remove all fixed width/height for true aspect ratio */
+  /* Container fits exactly to PDF content */
   width: fit-content;
   height: fit-content;
-  min-width: 0;
-  min-height: 0;
-  max-width: 95vw;
-  max-height: 85vh;
+  animation: fade-in 1.2s;
 }
 
 /* Desktop/Tablet - Enhanced PDF container */
 @media (min-width: 769px) {
   .pdfjs-preview-wrapper {
-    width: 600px;
-    height: 750px;
     margin-top: 50px;
-    background: rgba(255,255,255,0.12);
-    border-radius: 20px;
-    box-shadow: 0 8px 48px rgba(106, 130, 251, 0.35);
-    border: 2px solid rgba(106, 130, 251, 0.2);
-    backdrop-filter: blur(10px);
+    /* Remove fixed dimensions and styling to fit content exactly */
   }
 }
 
@@ -251,16 +269,17 @@
 
 @media (max-width: 700px) {
   .pdfjs-preview-wrapper {
-    padding-bottom: 90px; /* Add space for toolbar on mobile */
+    margin-bottom: 140px; /* Add more space for mobile toolbar */
+    max-height: 50vh; /* Further reduced for smaller screens */
   }
   .editor-page-nav {
     position: static;
     left: unset;
     right: unset;
     bottom: unset;
-    border-radius: 12px 12px 0 0;
+    border-radius: 12px;
     z-index: 10;
-    margin-bottom: 0.5rem;
+    margin: 1rem 0;
   }
 }
 
@@ -273,24 +292,36 @@
 }
 
 .pdfjs-page {
-  width: 100% !important;
-  height: auto !important;
-  max-width: 90vw;
-  max-height: 80vh;
-  object-fit: contain;
-  box-shadow: 0 2px 16px #6a82fb22;
+  box-shadow: 0 4px 20px rgba(106, 130, 251, 0.3);
   border-radius: 8px;
   overflow: hidden;
+  max-width: 100vw;
+  max-height: 70vh;
+}
+
+/* Mobile specific constraints */
+@media (max-width: 768px) {
+  .pdfjs-page {
+    max-width: 90vw;
+    max-height: 55vh;
+  }
 }
 
 .pdfjs-page canvas {
-  width: 100% !important;
-  height: auto !important;
-  max-width: 90vw;
-  max-height: 80vh;
-  object-fit: contain;
   display: block;
-  margin: 0 auto;
+  border-radius: 8px;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto !important;
+  height: auto !important;
+}
+
+/* Mobile specific canvas constraints */
+@media (max-width: 768px) {
+  .pdfjs-page canvas {
+    max-width: 90vw;
+    max-height: 55vh;
+  }
 }
 
 .pdfjs-controls {
@@ -562,8 +593,7 @@
     border-radius: 18px 18px 0 0;
     padding: 0.7rem 0 0.5rem 0;
   }
-  
-  .editor-main .pdf-placeholder {
+    .editor-main .pdf-placeholder {
     width: 90vw;
     height: 60vw;
     min-height: 220px;
@@ -574,12 +604,15 @@
     height: 60vw;
     min-height: 220px;
     min-width: 180px;
-  }
-  .pdfjs-preview-wrapper {
-    width: 82vw;
-    height: 40vw;
-    min-height: 220px;
-    min-width: 180px;
+  }  .pdfjs-preview-wrapper {
+    /* Ensure mobile PDF fits properly */
+    width: fit-content;
+    height: fit-content;
+    max-width: 90vw;
+    max-height: 55vh; /* Reduced height to account for header, navigation and toolbar */
+    margin: 0 auto;
+    margin-top: 20px;
+    margin-bottom: 140px; /* Space for mobile toolbar */
   }
   .modal-content {
     min-width: 90vw;
@@ -823,21 +856,22 @@
     left: unset;
     right: unset;
     bottom: unset;
-    border-radius: 12px 12px 0 0;
+    border-radius: 12px;
     z-index: 10;
-    margin-bottom: 0.5rem;
+    margin-bottom: 1rem;
+    margin-top: 1rem;
   }
 }
 
 @media (max-width: 600px) {
   .editor-page-nav {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 90px; /* height of toolbar, adjust if needed */
-    margin: 0;
-    border-radius: 0;
-    z-index: 100;
+    position: static; /* Keep static instead of fixed to avoid conflicts */
+    left: unset;
+    right: unset;
+    bottom: unset;
+    margin: 1rem 0;
+    border-radius: 12px;
+    z-index: 10;
   }
 }
 
@@ -1144,7 +1178,10 @@
 
 @keyframes pulse {
   0%, 100% { transform: scale(1); opacity: 0.8; }
-  50% { transform: scale(1.3); opacity: 1; }
+  50% { 
+    transform: scale(1.3); 
+    opacity: 1; 
+  }
 }
 
 /* Enhanced page preview container */
@@ -1271,4 +1308,328 @@
   .reorder-page-item {
     scroll-snap-align: start;
   }
+}
+
+/* =====================
+   Upload Modal Animations
+   ===================== */
+
+/* Upload drop zone */
+.upload-drop-zone {
+  width: 100%;
+  padding: 2rem;
+  border: 2px dashed rgba(106, 130, 251, 0.3);
+  border-radius: 20px;
+  background: rgba(106, 130, 251, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.upload-drop-zone::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(106, 130, 251, 0.1), transparent);
+  transform: rotate(-45deg);
+  transition: all 0.6s ease;
+  opacity: 0;
+}
+
+.upload-drop-zone:hover::before {
+  opacity: 1;
+  transform: rotate(-45deg) translate(50%, 50%);
+}
+
+.upload-drop-zone.drag-over {
+  border-color: #6a82fb;
+  background: rgba(106, 130, 251, 0.15);
+  box-shadow: 0 0 30px rgba(106, 130, 251, 0.3);
+  transform: scale(1.02);
+}
+
+.upload-drop-zone.drag-over::before {
+  opacity: 1;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Particle effects for drag over */
+.upload-drop-zone.drag-over::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(2px 2px at 20% 30%, rgba(106, 130, 251, 0.8), transparent),
+    radial-gradient(2px 2px at 40% 70%, rgba(252, 92, 125, 0.8), transparent),
+    radial-gradient(1px 1px at 90% 40%, rgba(106, 130, 251, 0.6), transparent),
+    radial-gradient(1px 1px at 60% 10%, rgba(252, 92, 125, 0.6), transparent);
+  background-size: 100px 100px, 80px 80px, 60px 60px, 90px 90px;
+  animation: particleFloat 3s linear infinite;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+@keyframes particleFloat {
+  0% {
+    background-position: 0% 0%, 0% 0%, 0% 0%, 0% 0%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.7;
+  }
+  90% {
+    opacity: 0.7;
+  }
+  100% {
+    background-position: 100% 100%, -100% 100%, 100% -100%, -100% -100%;
+    opacity: 0;
+  }
+}
+
+.modal-upload-btn.drag-active {
+  background: linear-gradient(90deg, #4ade80 0%, #22c55e 100%);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 25px rgba(34, 197, 94, 0.4);
+}
+
+/* Upload progress container */
+.upload-progress-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 2rem;
+  text-align: center;
+  animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Upload spinner */
+.upload-spinner {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 3px solid rgba(106, 130, 251, 0.2);
+  border-top: 3px solid #6a82fb;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.spinner-icon {
+  font-size: 2rem;
+  color: #6a82fb;
+  z-index: 1;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { 
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% { 
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+/* Upload title and percentage */
+.upload-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.upload-percentage {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #e0d7f7;
+  margin: 0;
+}
+
+/* Progress bar */
+.progress-bar {
+  width: 280px;
+  height: 8px;
+  background: rgba(106, 130, 251, 0.2);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6a82fb 0%, #fc5c7d 100%);
+  border-radius: 10px;
+  transition: width 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-fill::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: progressShine 2s infinite;
+}
+
+@keyframes progressShine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Enhanced modal animations */
+.modal-upload-icon {
+  transition: all 0.3s ease;
+}
+
+.upload-drop-zone:hover .modal-upload-icon {
+  transform: translateY(-5px) scale(1.1);
+  filter: drop-shadow(0 0 20px #6a82fb);
+}
+
+.modal-title {
+  transition: all 0.3s ease;
+}
+
+.upload-drop-zone:hover .modal-title {
+  color: #6a82fb;
+  text-shadow: 0 0 20px rgba(106, 130, 251, 0.5);
+}
+
+/* Upload success state */
+.upload-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  animation: successFadeIn 0.6s ease-out;
+}
+
+@keyframes successFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.success-checkmark {
+  width: 80px;
+  height: 80px;
+  position: relative;
+}
+
+.checkmark {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: block;
+  stroke-width: 2;
+  stroke: #4ade80;
+  stroke-miterlimit: 10;
+  animation: checkmarkScale 0.6s ease-in-out;
+}
+
+.checkmark-circle {
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  stroke-width: 2;
+  stroke-miterlimit: 10;
+  stroke: #4ade80;
+  fill: rgba(74, 222, 128, 0.1);
+  animation: checkmarkCircle 0.6s ease-in-out;
+}
+
+.checkmark-check {
+  transform-origin: 50% 50%;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  stroke: #4ade80;
+  stroke-width: 3;
+  animation: checkmarkCheck 0.3s ease-in-out 0.3s forwards;
+}
+
+@keyframes checkmarkScale {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes checkmarkCircle {
+  0% {
+    stroke-dashoffset: 166;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes checkmarkCheck {
+  0% {
+    stroke-dashoffset: 48;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.success-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #4ade80;
+  margin: 0;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 10px rgba(74, 222, 128, 0.3);
+}
+
+.success-message {
+  font-size: 1rem;
+  color: #e0d7f7;
+  margin: 0;
+  opacity: 0.9;
 }

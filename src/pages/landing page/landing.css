@@ -138,7 +138,7 @@ body, html, .landing {
   align-items: center;
   justify-content: center;
   min-height: 80vh;
-  padding: 2rem 0 0 0;
+  padding: 2rem 3rem 0 3rem;
   position: relative;
   z-index: 2;
   max-width: 1200px;
@@ -151,6 +151,7 @@ body, html, .landing {
   flex-direction: column;
   gap: 2rem;
   z-index: 2;
+  padding: 1rem 1rem;
 }
 .badge {
   display: inline-block;
@@ -596,13 +597,6 @@ body, html, .landing {
   background: rgba(255,255,255,0.03);
   border-radius: 1.5rem;
   border: 1px solid rgba(255,255,255,0.08);
-  transition: all 0.3s ease;
-}
-
-.merger-feature:hover {
-  background: rgba(255,255,255,0.08);
-  border-color: rgba(106, 130, 251, 0.3);
-  transform: translateY(-4px);
 }
 
 .merger-feature-icon {
@@ -637,8 +631,11 @@ body, html, .landing {
   .hero {
     flex-direction: column;
     align-items: flex-start;
-    padding: 2rem 1rem 0 1rem;
+    padding: 2rem 2rem 0 2rem;
     gap: 2.5rem;
+  }
+  .hero-content {
+    padding: 0 0.5rem;
   }
   .hero-visual {
     width: 100%;
@@ -696,13 +693,14 @@ body, html, .landing {
     align-items: center;
     text-align: center;
     justify-content: center;
-    padding: 2rem 0;
+    padding: 2rem 1.5rem;
   }
   .hero-content {
     align-items: center;
     text-align: center;
     width: 100%;
     margin-bottom: 2rem;
+    padding: 0;
   }
   .hero-title,
   .hero-subtitle,
@@ -732,18 +730,22 @@ body, html, .landing {
   .nav {
     flex-direction: column;
     gap: 1.2rem;
-    padding: 1.2rem 1rem 1rem 1rem;
+    padding: 1.2rem 1.5rem 1rem 1.5rem;
+  }
+  .hero {
+    padding: 2rem 1.5rem 0 1.5rem;
   }
   .hero-title {
     font-size: 2rem;
   }
   .hero-image-container {
-    width: 98vw;
-    max-width: 98vw;
+    width: 95vw;
+    max-width: 95vw;
     height: 220px;
   }
   .hero-content {
     gap: 1.2rem;
+    padding: 0 0.5rem;
   }
   .hero-stats {
     gap: 1.2rem;
@@ -760,9 +762,29 @@ body, html, .landing {
   .merger-upload-text {
     font-size: 1.1rem;
   }
-  
-  .merger-features {
+    .merger-features {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 480px) {
+  .hero {
+    padding: 2rem 2rem 0 2rem;
+  }
+  .hero-content {
+    padding: 0 0.75rem;
+  }
+  .nav {
+    padding: 1.2rem 1.5rem 1rem 1.5rem;
+  }
+  .hero-title {
+    font-size: 1.8rem;
+    line-height: 1.2;
+  }
+  .hero-subtitle {
+    font-size: 1.1rem;
+    line-height: 1.5;
   }
 }
 
