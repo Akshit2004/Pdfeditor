@@ -551,10 +551,42 @@ export default function Editor() {
         const [copiedPage] = await newPdfDoc.copyPages(pdfDoc, [pageNum - 1]);
         newPdfDoc.addPage(copiedPage);
       }
-      
-      const newPdfBytes = await newPdfDoc.save();
+        const newPdfBytes = await newPdfDoc.save();
       const newFile = new File([newPdfBytes], pdfFile.name || 'document.pdf', { type: 'application/pdf' });
       setPdfFile(newFile);
+      
+      // Update page references for text and highlight elements to match new page order
+      const pageMapping = {};
+      pageOrder.forEach((originalPageNum, newIndex) => {
+        pageMapping[originalPageNum] = newIndex + 1; // Map original page to new position
+      });
+      
+      // Update text elements with new page numbers
+      setTextElements(prevElements => 
+        prevElements.map(element => ({
+          ...element,
+          page: pageMapping[element.page] || element.page
+        }))
+      );
+        // Update highlight elements with new page numbers  
+      setHighlightElements(prevElements =>
+        prevElements.map(element => ({
+          ...element,
+          page: pageMapping[element.page] || element.page
+        }))
+      );
+      
+      // Update rotation state to match new page order
+      setRotations(prevRotations => {
+        const newRotations = {};
+        pageOrder.forEach((originalPageNum, newIndex) => {
+          const originalRotation = prevRotations[originalPageNum - 1];
+          if (originalRotation !== undefined) {
+            newRotations[newIndex] = originalRotation;
+          }
+        });
+        return newRotations;
+      });
       
       // Reset to first page
       setPageNumber(1);
@@ -607,7 +639,6 @@ export default function Editor() {
       }
     }
   };
-
   const handleMouseUp = (e) => {
     if (isHighlighting && highlightStart && activeEditTool === 'highlight') {
       if (pdfContainerRef.current) {
@@ -626,6 +657,10 @@ export default function Editor() {
         }]);
         setIsHighlighting(false);
         setHighlightStart(null);
+        
+        // End the highlight tool after one use
+        setActiveEditTool(null);
+        setShowEditToolbar(false);
       }
     }
     if (moveMode && movingElement) {
