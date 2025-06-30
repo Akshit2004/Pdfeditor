@@ -392,7 +392,13 @@ const Landing = () => {
               <span className="extract-upload-text">Upload PDF for Extraction</span>
             </label>
             <div className="extract-result-block">
-              <pre className="extract-text-block">{extractedText}</pre>
+              <textarea
+                className="extract-text-block"
+                value={extractedText}
+                onChange={e => setExtractedText(e.target.value)}
+                rows={Math.max(10, extractedText.split('\n').length + 2)}
+                style={{ width: '100%', resize: 'vertical', background: 'transparent', border: 'none', outline: 'none', color: '#f5f6fa', fontFamily: 'Fira Mono, Consolas, Menlo, monospace', fontSize: '1.08rem', lineHeight: '1.7', letterSpacing: '0.01em' }}
+              />
             </div>
           </div>
         </div>
