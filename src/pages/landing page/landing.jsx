@@ -16,6 +16,8 @@ import './landing.css';
 const Landing = () => {
   const [mergerFiles, setMergerFiles] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showFilenameModal, setShowFilenameModal] = useState(false);
+  const [downloadFilename, setDownloadFilename] = useState('merged-document.pdf');
 
   useEffect(() => {
     // Add parallax effect on scroll
@@ -56,7 +58,21 @@ const Landing = () => {
     });
   };
 
-  const mergePDFs = async () => {
+  const handleMergeClick = () => {
+    setDownloadFilename('merged-document.pdf');
+    setShowFilenameModal(true);
+  };
+
+  const handleFilenameChange = (e) => {
+    setDownloadFilename(e.target.value);
+  };
+
+  const handleFilenameConfirm = () => {
+    setShowFilenameModal(false);
+    mergePDFs(downloadFilename);
+  };
+
+  const mergePDFs = async (filename = 'merged-document.pdf') => {
     if (mergerFiles.length < 2) return;
     setIsProcessing(true);
     try {
@@ -95,7 +111,7 @@ const Landing = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'merged-document.pdf';
+      a.download = filename.endsWith('.pdf') ? filename : filename + '.pdf';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -134,19 +150,22 @@ const Landing = () => {
       {/* Hero section */}
       <section className="hero">
         <div className="hero-content">
-          <div className="badge">Next-Gen PDF Technology</div>
+          <div className="badge">Modern PDF Tools</div>
           <h1 className="hero-title">
-            Transform Your <span className="gradient-text">Documents</span> Into 
+            Transform Your <span className="gradient-text">Documents</span> Into
             <span className="gradient-text"> Interactive Experiences</span>
           </h1>
           <p className="hero-subtitle">
-            Experience the future of document editing with AI-powered tools that bring your PDFs to life.
-            Edit, enhance, and collaborate with unprecedented precision and ease.
+            Experience the future of document editing with powerful, user-friendly tools that bring your PDFs to life.
+            Edit, enhance, and collaborate with ease and flexibility.
           </p>
           <div className="hero-buttons">
             <Link to="/editor" className="primary-button">
               Launch Editor <FaChevronRight className="btn-icon" />
             </Link>
+          </div>
+          <div className="hero-hint">
+            <span>Want to merge PDFs? Scroll down to use our PDF Merger Tool!</span>
           </div>
           <div className="hero-stats">
             <div className="stat">
@@ -190,11 +209,10 @@ const Landing = () => {
           <div className="merger-header">
             <div className="badge merger-badge">PDF Merger Tool</div>
             <h2 className="merger-title">
-              Combine Multiple <span className="gradient-text">PDFs</span> Into One
+              Combine Multiple <span className="gradient-text">PDFs & Images</span> Into One PDF
             </h2>
             <p className="merger-subtitle">
-              Easily merge multiple PDF files into a single document. Drag and drop to reorder, 
-              then download your combined PDF instantly.
+              Easily merge multiple PDF files <b>and images (JPG, PNG)</b> into a single document. Drag and drop to reorder, then download your combined PDF instantly.
             </p>
           </div>
           
@@ -214,7 +232,7 @@ const Landing = () => {
                   {mergerFiles.length === 0 ? 'Select PDF Files' : 'Add More PDFs'}
                 </span>
                 <span className="merger-upload-hint">
-                  Click to browse or drag & drop PDF files
+                  Click to browse or drag & drop PDF/Images files
                 </span>
               </label>
             </div>
@@ -276,7 +294,7 @@ const Landing = () => {
                   </button>
                   <button
                     className="merger-merge-btn"
-                    onClick={mergePDFs}
+                    onClick={handleMergeClick}
                     disabled={mergerFiles.length < 2 || isProcessing}
                   >
                     {isProcessing ? (
@@ -299,7 +317,7 @@ const Landing = () => {
                 <FaPlus />
               </div>
               <h4>Easy Upload</h4>
-              <p>Select multiple PDF files at once</p>
+              <p>Select multiple files at once</p>
             </div>            <div className="merger-feature">
               <div className="merger-feature-icon">
                 <FaEdit />
@@ -317,6 +335,27 @@ const Landing = () => {
           </div>
         </div>
       </section>
+
+      {showFilenameModal && (
+        <div className="filename-modal-overlay">
+          <div className="filename-modal">
+            <h3>Set Download File Name</h3>
+            <input
+              type="text"
+              value={downloadFilename}
+              onChange={handleFilenameChange}
+              className="filename-input"
+              disabled={isProcessing}
+              maxLength={64}
+              autoFocus
+            />
+            <div className="filename-modal-actions">
+              <button onClick={() => setShowFilenameModal(false)} disabled={isProcessing}>Cancel</button>
+              <button onClick={handleFilenameConfirm} disabled={isProcessing || !downloadFilename.trim()}>Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
