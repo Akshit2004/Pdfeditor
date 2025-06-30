@@ -16,7 +16,8 @@ const TOOLBAR_TOOLS = [
   { icon: <FaTrash />, label: 'Delete' },
   { icon: <FaDownload />, label: 'Download' },
   { icon: <FaSyncAlt />, label: 'Rotate' },
-  { icon: <FaDownload />, label: 'Export PNG' }, // New PNG export button
+  { icon: <FaDownload />, label: 'Export PNG' },
+  { icon: <span role="img" aria-label="Signature">✍️</span>, label: 'Signature' }, // Signature tool
 ];
 
 // Set up PDF.js worker
@@ -82,15 +83,42 @@ export default function Editor() {
   const [exportPngSelectedPages, setExportPngSelectedPages] = useState([]);
   const [isExportingPng, setIsExportingPng] = useState(false);
 
-  // Helper to push current PDF to undo stack before destructive changes
+  // Signature state
+  const [signatureImage, setSignatureImage] = useState(null); // uploaded image data url
+  const [isAddingSignature, setIsAddingSignature] = useState(false);
+  const [signatures, setSignatures] = useState([]); // { id, page, position: {x, y}, imageUrl }
+  const signatureInputRef = useRef();
+  const [showSignatureModal, setShowSignatureModal] = useState(false); // NEW: modal for signature preview
+
+  // --- Add this function inside Editor ---
+  const handleSignatureTool = () => {
+    setShowEditToolbar(false);
+    setShowFilterToolbar(false);
+    if (signatureInputRef.current) {
+      signatureInputRef.current.value = null; // Reset input so same file can be re-uploaded
+      signatureInputRef.current.click();
+    }
+  };
+
+  // Helper to push current PDF and annotation states to undo stack before destructive changes
   const pushToUndoStack = () => {
-    if (pdfFile) setUndoStack(stack => [...stack, pdfFile]);
+    if (pdfFile) {
+      setUndoStack(stack => [
+        ...stack,
+        {
+          pdfFile,
+          signatures: [...signatures],
+          // Optionally add other annotation states here
+        }
+      ]);
+    }
   };
 
   const handleRevert = () => {
     if (undoStack.length > 0) {
       const prev = undoStack[undoStack.length - 1];
-      setPdfFile(prev);
+      setPdfFile(prev.pdfFile);
+      setSignatures(prev.signatures || []);
       setUndoStack(stack => stack.slice(0, -1));
       // Optionally reset page/annotations if needed
     }
@@ -613,6 +641,15 @@ export default function Editor() {
     setDragOverIndex(null);
   };
 
+  // Helper to get the PDF page canvas and its bounding rect
+const getPdfPageCanvasRect = () => {
+  const pdfPage = document.querySelector('.pdfjs-page canvas');
+  if (pdfPage) {
+    return pdfPage.getBoundingClientRect();
+  }
+  return null;
+};
+
   const handlePageClick = (e) => {
     if (activeEditTool === 'addText' && !isAddingText) {
       if (pdfContainerRef.current) {
@@ -632,6 +669,22 @@ export default function Editor() {
         const y = e.clientY - rect.top;
         setHighlightStart({ x, y });
         setIsHighlighting(true);
+      }
+    }
+    if (isAddingSignature && signatureImage) {
+      const canvasRect = getPdfPageCanvasRect();
+      if (canvasRect) {
+        pushToUndoStack(); // <--- Add this line
+        const x = e.clientX - canvasRect.left;
+        const y = e.clientY - canvasRect.top;
+        setSignatures([...signatures, {
+          id: Date.now(),
+          page: pageNumber,
+          position: { x, y },
+          imageUrl: signatureImage,
+        }]);
+        setIsAddingSignature(false);
+        setSignatureImage(null);
       }
     }
   };
@@ -1144,6 +1197,35 @@ function PngPreview({ pdfFile, pageNum }) {
                       onBlur={handleTextInputBlur}
                     />
                   )}
+                  {/* Render signature images */}
+                  {signatures.filter(sig => sig.page === pageNumber).map(sig => {
+                    // Render relative to the PDF page canvas
+                    const canvasRect = getPdfPageCanvasRect();
+                    let left = sig.position.x;
+                    let top = sig.position.y;
+                    // Fallback if canvas not found
+                    if (!canvasRect) {
+                      left = sig.position.x;
+                      top = sig.position.y;
+                    }
+                    return (
+                      <img
+                        key={sig.id}
+                        src={sig.imageUrl}
+                        alt="Signature"
+                        className="pdf-signature"
+                        style={{
+                          position: 'absolute',
+                          left: left,
+                          top: top,
+                          width: 120,
+                          height: 'auto',
+                          pointerEvents: 'none',
+                          zIndex: 10,
+                        }}
+                      />
+                    );
+                  })}
                 </div>
               </>
             ) : (
@@ -1389,7 +1471,8 @@ function PngPreview({ pdfFile, pageNum }) {
                     if (tool.label === 'Delete') handleDeletePage();
                     if (tool.label === 'Download') handleDownloadPdf();
                     if (tool.label === 'Rotate') handleRotateCurrentPage();
-                    if (tool.label === 'Export PNG') handleExportPng(); // PNG export
+                    if (tool.label === 'Export PNG') handleExportPng();
+                    if (tool.label === 'Signature') handleSignatureTool();
                   }}
                 >
                   <div className="tool-icon">{tool.icon}</div>
@@ -1409,6 +1492,60 @@ function PngPreview({ pdfFile, pageNum }) {
           )}
         </>
       )}
+      {/* Signature upload input (hidden) */}
+<input
+  type="file"
+  accept="image/*"
+  ref={signatureInputRef}
+  style={{ display: 'none' }}
+  onChange={e => {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setSignatureImage(ev.target.result);
+        setShowSignatureModal(true); // Show modal for preview/confirmation
+      };
+      reader.readAsDataURL(file);
+    }
+  }}
+/>
+{showSignatureModal && signatureImage && (
+  <div className="editor-modal-bg">
+    <div className="editor-modal signature-modal" style={{ minWidth: 320, textAlign: 'center' }}>
+      <h3>Preview Signature</h3>
+      <img src={signatureImage} alt="Signature Preview" style={{ maxWidth: 220, maxHeight: 120, margin: '1rem auto', display: 'block', border: '2px solid #6a82fb', borderRadius: 8, background: '#fff' }} />
+      <div style={{ margin: '1rem 0', color: '#6a82fb', fontWeight: 600 }}>
+        Click "Place Signature" and then click on the PDF to position it.
+      </div>
+      <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
+        <button
+          className="editor-modal-btn confirm"
+          onClick={() => {
+            setIsAddingSignature(true);
+            setShowSignatureModal(false);
+          }}
+        >
+          Place Signature
+        </button>
+        <button
+          className="editor-modal-btn cancel"
+          onClick={() => {
+            setSignatureImage(null);
+            setShowSignatureModal(false);
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+{isAddingSignature && signatureImage && (
+  <div className="signature-hint" style={{ color: '#6a82fb', fontWeight: 600, margin: 8 }}>
+    Click on the PDF to place your signature
+  </div>
+)}
     </div>
   );
 }
