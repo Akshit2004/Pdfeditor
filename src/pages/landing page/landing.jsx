@@ -12,12 +12,14 @@ import {
   FaClone
 } from 'react-icons/fa';
 import './landing.css';
+import * as pdfjsLib from 'pdfjs-dist/build/pdf';
 
 const Landing = () => {
   const [mergerFiles, setMergerFiles] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showFilenameModal, setShowFilenameModal] = useState(false);
   const [downloadFilename, setDownloadFilename] = useState('merged-document.pdf');
+  const [extractedText, setExtractedText] = useState('');
 
   useEffect(() => {
     // Add parallax effect on scroll
@@ -331,6 +333,66 @@ const Landing = () => {
               </div>
               <h4>Instant Download</h4>
               <p>Get your merged PDF immediately</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* PDF Text Extraction Section */}
+      <section className="extract-section">
+        <div className="extract-container">
+          <div className="extract-header">
+            <div className="badge extract-badge">PDF Text Extractor</div>
+            <h2 className="extract-title">
+              Extract <span className="gradient-text">Text, Symbols & Tables</span> from Your PDF
+            </h2>
+            <p className="extract-subtitle">
+              Upload a PDF to instantly extract all its text content, including special symbols, paragraphs, and tables. <br />
+              <b>How to use:</b> Click the button below to upload your PDF. The extracted text will appear in the box below, preserving as much formatting as possible.
+            </p>
+          </div>
+          <div className="extract-workspace">
+            <input
+              type="file"
+              accept="application/pdf"
+              onChange={async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                setExtractedText('Extracting...');
+                try {
+                  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.mjs';
+                  const arrayBuffer = await file.arrayBuffer();
+                  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                  let text = '';
+                  for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    let lastY, lastItem, pageText = '';
+                    content.items.forEach((item) => {
+                      if (lastY === item.transform[5] || !lastY) {
+                        pageText += item.str;
+                      } else {
+                        pageText += '\n' + item.str;
+                      }
+                      lastY = item.transform[5];
+                      lastItem = item;
+                    });
+                    text += pageText + '\n\n';
+                  }
+                  setExtractedText(text.trim());
+                } catch (err) {
+                  setExtractedText('Failed to extract text.');
+                }
+              }}
+              className="extract-file-input"
+              id="extract-file-input"
+            />
+            <label htmlFor="extract-file-input" className="extract-upload-label">
+              <FaPlus className="extract-upload-icon" />
+              <span className="extract-upload-text">Upload PDF for Extraction</span>
+            </label>
+            <div className="extract-result-block">
+              <pre className="extract-text-block">{extractedText}</pre>
             </div>
           </div>
         </div>
