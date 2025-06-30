@@ -989,6 +989,34 @@
   }
 }
 
+/* Remove any floating/hovering animation on the PDF canvas */
+.pdfjs-preview-wrapper,
+.pdfjs-page canvas {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+}
+
+/* Prevent blinking/flicker on mouse leave */
+.pdfjs-preview-wrapper:active,
+.pdfjs-preview-wrapper:focus,
+.pdfjs-preview-wrapper:hover,
+.pdfjs-page canvas:active,
+.pdfjs-page canvas:focus,
+.pdfjs-page canvas:hover {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+}
+
+/* Remove any custom hover effect on the PDF canvas */
+.pdfjs-preview-wrapper:hover,
+.pdfjs-page canvas:hover {
+  box-shadow: none !important;
+  filter: none !important;
+  background: inherit !important;
+}
+
 /* Reorder Pages Modal */
 .reorder-modal {
   max-width: 95vw;
