@@ -7,13 +7,16 @@ import './editor.css';
 import './react-pdf-overrides.css';
 import EditToolbar from './EditToolbar';
 import FilterToolbar from './FilterToolbar';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 const TOOLBAR_TOOLS = [
   { icon: <FaEdit />, label: 'Edit' },
-  { icon: <FaSyncAlt />, label: 'Filter' }, // Filter is now second
+  { icon: <FaSyncAlt />, label: 'Filter' },
   { icon: <FaTrash />, label: 'Delete' },
   { icon: <FaDownload />, label: 'Download' },
   { icon: <FaSyncAlt />, label: 'Rotate' },
+  { icon: <FaDownload />, label: 'Export PNG' }, // New PNG export button
 ];
 
 // Set up PDF.js worker
@@ -74,6 +77,10 @@ export default function Editor() {
   const [touchStartPos, setTouchStartPos] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOverIndex, setDragOverIndex] = useState(null);
+  const [showExportPngModal, setShowExportPngModal] = useState(false);
+  const [exportPngAllPages, setExportPngAllPages] = useState(true);
+  const [exportPngSelectedPages, setExportPngSelectedPages] = useState([]);
+  const [isExportingPng, setIsExportingPng] = useState(false);
 
   // Helper to push current PDF to undo stack before destructive changes
   const pushToUndoStack = () => {
@@ -780,6 +787,120 @@ export default function Editor() {
   if (activeFilterTool === 'brighten') pdfFilter = 'brightness(1.3)';
   if (activeFilterTool === 'darken') pdfFilter = 'brightness(0.7)';
 
+  // Helper to handle PNG export
+  const handleExportPng = () => {
+    setShowExportPngModal(true);
+    setExportPngAllPages(true);
+    setExportPngSelectedPages([]);
+  };
+
+  const handleExportPngConfirm = async () => {
+    if (!pdfFile) return;
+    setIsExportingPng(true);
+    try {
+      const arrayBuffer = await pdfFile.arrayBuffer();
+      const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+      const pdf = await loadingTask.promise;
+      let pagesToExport = [];
+      if (exportPngAllPages) {
+        pagesToExport = Array.from({ length: pdf.numPages }, (_, i) => i + 1);
+      } else {
+        pagesToExport = exportPngSelectedPages;
+      }
+      if (pagesToExport.length === 1) {
+        // Single page export
+        const pageNum = pagesToExport[0];
+        const page = await pdf.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 2 });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const ctx = canvas.getContext('2d');
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        canvas.toBlob(blob => {
+          saveAs(blob, `page-${pageNum}.png`);
+        }, 'image/png');
+      } else {
+        // Multiple pages: zip
+        const zip = new JSZip();
+        for (let i = 0; i < pagesToExport.length; i++) {
+          const pageNum = pagesToExport[i];
+          const page = await pdf.getPage(pageNum);
+          const viewport = page.getViewport({ scale: 2 });
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          const ctx = canvas.getContext('2d');
+          await page.render({ canvasContext: ctx, viewport }).promise;
+          const dataUrl = canvas.toDataURL('image/png');
+          zip.file(`page-${pageNum}.png`, dataURLToUint8Array(dataUrl));
+        }
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        saveAs(zipBlob, 'pdf-pages.zip');
+      }
+    } catch (err) {
+      alert('Failed to export PNGs.');
+    }
+    setIsExportingPng(false);
+    setShowExportPngModal(false);
+  };
+
+  // PNG Preview Grid Component
+function PngPreviewGrid({ pdfFile, pageNums }) {
+  const visiblePages = pageNums.slice(0, 6);
+  return (
+    <div style={{
+      margin: '1rem 0',
+      display: 'flex',
+      gap: 16,
+      overflowX: pageNums.length > 6 ? 'auto' : 'visible',
+      maxWidth: 6 * 130 + 24, // 6 images + gap
+      paddingBottom: 8,
+    }}>
+      {visiblePages.map(pageNum => (
+        <PngPreview key={pageNum} pdfFile={pdfFile} pageNum={pageNum} />
+      ))}
+      {pageNums.length > 6 && (
+        <div style={{alignSelf: 'center', color: '#aaa', fontSize: 13, minWidth: 80}}>
+          +{pageNums.length - 6} more...
+        </div>
+      )}
+    </div>
+  );
+}
+
+// PNG Preview Component
+function PngPreview({ pdfFile, pageNum }) {
+  const [imgUrl, setImgUrl] = React.useState(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    async function renderPreview() {
+      if (!pdfFile || !pageNum) return;
+      const arrayBuffer = await pdfFile.arrayBuffer();
+      const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+      const pdf = await loadingTask.promise;
+      const page = await pdf.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 0.5 });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      const url = canvas.toDataURL('image/png');
+      if (!cancelled) setImgUrl(url);
+    }
+    renderPreview();
+    return () => { cancelled = true; };
+  }, [pdfFile, pageNum]);
+  if (!imgUrl) return <div style={{margin: '1rem 0', color: '#aaa', minWidth: 120, minHeight: 90}}>Loading...</div>;
+  return (
+    <div style={{textAlign: 'center', minWidth: 120}}>
+      <img src={imgUrl} alt={`PNG Preview page ${pageNum}`} style={{maxWidth: 110, maxHeight: 90, borderRadius: 8, boxShadow: '0 2px 12px #6a82fb22'}} />
+      <div style={{fontSize: 12, color: '#888', marginTop: 2}}>Page {pageNum}</div>
+    </div>
+  );
+}
+
   return (
     <div className="editor-bg">      {showModal && (
         <div className="glass-modal">
@@ -1049,78 +1170,180 @@ export default function Editor() {
                   {isProcessingDownload && <div className="editor-modal-status">Processing PDF...</div>}
                 </div>
               </div>
-            )}            {/* Reorder pages modal */}
-            {showReorderModal && (
-              <div className="editor-modal-bg">
-                <div className="editor-modal reorder-modal">
-                  <h3>Reorder Pages</h3>
-                  <p>Drag and drop to reorder pages</p>
-                  <div className="reorder-pages-container">
-                    <div className="reorder-pages-grid">
-                    {pageOrder.map((pageNum, index) => (
+            )}            {/* Export PNG Modal */}
+            {showExportPngModal && (
+              <div
+                style={{
+                  position: "fixed",
+                  left: 0,
+                  top: 0,
+                  width: "100vw",
+                  height: "100vh",
+                  zIndex: 1000,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background:
+                    "linear-gradient(120deg, rgba(106,130,251,0.10) 0%, rgba(252,92,125,0.10) 100%), rgba(30, 16, 60, 0.25)",
+                  backdropFilter: "blur(8px)",
+                }}
+              >
+                <div
+                  style={{
+                    background: "rgba(77, 71, 71, 0.85)",
+                    borderRadius: 18,
+                    boxShadow:
+                      "0 8px 40px 0 rgba(157, 78, 221, 0.18), 0 2px 8px 0 rgba(106, 130, 251, 0.10)",
+                    border: "2px solid rgba(157, 78, 221, 0.15)",
+                    padding: "2.5rem 2rem 2rem 2rem",
+                    minWidth: 340,
+                    maxWidth: "95vw",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    position: "relative",
+                    backdropFilter: "blur(18px)",
+                  }}
+                >
+                  <h3
+                    style={{
+                      marginBottom: 18,
+                      fontSize: "1.6rem",
+                      fontWeight: 700,
+                      background:
+                        "linear-gradient(90deg, #6a82fb 0%, #fc5c7d 100%)",
+                      WebkitBackgroundClip: "text",
+                      backgroundClip: "text",
+                      color: "transparent",
+                      textShadow: "0 2px 16px #6a82fb33",
+                    }}
+                  >
+                    Export as <span style={{color: '#fc5c7d'}}>PNG</span>
+                  </h3>
+                  <div style={{ marginBottom: "1rem" }}>
+                    <label>
+                      <input
+                        type="radio"
+                        checked={exportPngAllPages}
+                        onChange={() => setExportPngAllPages(true)}
+                      />
+                      Export all pages
+                    </label>
+                    <br />
+                    <label>
+                      <input
+                        type="radio"
+                        checked={!exportPngAllPages}
+                        onChange={() => setExportPngAllPages(false)}
+                      />
+                      Export selected pages:
+                    </label>
+                    {!exportPngAllPages && (
                       <div
-                        key={`page-${pageNum}-${index}`}
-                        data-index={index}
-                        className={`reorder-page-item${
-                          draggedPage === index ? ' dragging' : ''
-                        }${dragOverIndex === index ? ' drag-over' : ''}${
-                          isDragging && draggedPage !== index ? ' drag-active' : ''
-                        }`}
-                        draggable
-                        onDragStart={(e) => handlePageDragStart(e, index)}
-                        onDragOver={(e) => handlePageDragOver(e, index)}
-                        onDragEnter={(e) => handlePageDragEnter(e, index)}
-                        onDragLeave={handlePageDragLeave}
-                        onDrop={(e) => handlePageDrop(e, index)}
-                        onDragEnd={handlePageDragEnd}
-                        onTouchStart={(e) => handleTouchStart(e, index)}
-                        onTouchMove={(e) => handleTouchMove(e, index)}
-                        onTouchEnd={(e) => handleTouchEnd(e, index)}
                         style={{
-                          transform: draggedPage === index && isDragging 
-                            ? 'scale(1.05) rotate(5deg)' 
-                            : dragOverIndex === index && isDragging
-                            ? 'scale(1.02)'
-                            : 'scale(1)',
-                          transition: isDragging ? 'none' : 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                          zIndex: draggedPage === index ? 1000 : 1
+                          marginTop: "0.5rem",
+                          maxHeight: 120,
+                          overflowY: "auto",
+                          border: "1px solid #444",
+                          borderRadius: 8,
+                          padding: 8,
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: 8,
                         }}
                       >
-                        <div className="reorder-page-number">Page {pageNum}</div>                        <div className="reorder-page-preview">
-                          <Document file={pdfFile} className="reorder-pdf-document">
-                            <Page 
-                              pageNumber={pageNum} 
-                              scale={0.5}
-                              className="reorder-pdf-page"
-                              renderTextLayer={false}
-                              renderAnnotationLayer={false}
-                            />
-                          </Document>
-                        </div>
-                        <div className="reorder-drag-indicator">
-                          <span></span>
-                          <span></span>
-                          <span></span>
-                        </div>                      </div>
-                    ))}
+                        {Array.from({ length: numPages }, (_, i) => i + 1).map(
+                          (pageNum) => (
+                            <label key={pageNum} style={{ marginRight: 12, minWidth: 90 }}>
+                              <input
+                                type="checkbox"
+                                checked={exportPngSelectedPages.includes(pageNum)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setExportPngSelectedPages((prev) => [
+                                      ...prev,
+                                      pageNum,
+                                    ]);
+                                  } else {
+                                    setExportPngSelectedPages((prev) =>
+                                      prev.filter((p) => p !== pageNum)
+                                    );
+                                  }
+                                }}
+                              />
+                              Page {pageNum}
+                            </label>
+                          )
+                        )}
+                      </div>
+                    )}
                   </div>
-                  </div>
-                  <div className="editor-modal-btns">
-                    <button 
-                      onClick={applyPageReorder} 
-                      className="editor-modal-btn confirm"
-                      disabled={isProcessingDownload}
+                  {/* PNG Previews */}
+                  <PngPreviewGrid
+                    pdfFile={pdfFile}
+                    pageNums={exportPngAllPages ? Array.from({length: numPages}, (_, i) => i + 1) : exportPngSelectedPages}
+                  />
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 18,
+                      justifyContent: "center",
+                      width: "100%",
+                      marginBottom: 0,
+                    }}
+                  >
+                    <button
+                      onClick={handleExportPngConfirm}
+                      style={{
+                        border: "none",
+                        borderRadius: 8,
+                        padding: "10px 26px",
+                        fontWeight: 700,
+                        fontSize: "1.05rem",
+                        cursor: "pointer",
+                        background:
+                          "linear-gradient(90deg, #9d4edd 0%, #c77dff 100%)",
+                        color: "#fff",
+                        boxShadow: "0 2px 12px #6a82fb22",
+                      }}
+                      disabled={
+                        isExportingPng ||
+                        (!exportPngAllPages && exportPngSelectedPages.length === 0)
+                      }
                     >
-                      {isProcessingDownload ? 'Processing...' : 'Apply Changes'}
+                      {isExportingPng ? "Exporting..." : "Export"}
                     </button>
-                    <button 
-                      onClick={cancelPageReorder} 
-                      className="editor-modal-btn cancel"
-                      disabled={isProcessingDownload}
+                    <button
+                      onClick={() => setShowExportPngModal(false)}
+                      style={{
+                        border: "none",
+                        borderRadius: 8,
+                        padding: "10px 26px",
+                        fontWeight: 700,
+                        fontSize: "1.05rem",
+                        cursor: "pointer",
+                        background: "#eee",
+                        color: "#3730a3",
+                        boxShadow: "0 1px 4px #9d4edd11",
+                      }}
+                      disabled={isExportingPng}
                     >
                       Cancel
                     </button>
                   </div>
+                  {isExportingPng && (
+                    <div
+                      style={{
+                        marginTop: 18,
+                        color: "#6c2bd7",
+                        fontWeight: 600,
+                        fontSize: "1.08rem",
+                        textAlign: "center",
+                      }}
+                    >
+                      Exporting PNGs...
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1166,6 +1389,7 @@ export default function Editor() {
                     if (tool.label === 'Delete') handleDeletePage();
                     if (tool.label === 'Download') handleDownloadPdf();
                     if (tool.label === 'Rotate') handleRotateCurrentPage();
+                    if (tool.label === 'Export PNG') handleExportPng(); // PNG export
                   }}
                 >
                   <div className="tool-icon">{tool.icon}</div>
