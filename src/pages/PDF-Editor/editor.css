@@ -1661,3 +1661,185 @@
   margin: 0;
   opacity: 0.9;
 }
+
+/* Theme Switcher Styles for Editor */
+.editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: rgba(26, 26, 46, 0.6);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.editor-title-animated {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+/* Minimal Theme Styles for Editor */
+.theme-minimal .editor-bg {
+  background: #f8f9fa !important;
+  color: #333 !important;
+}
+
+.theme-minimal .editor-bg::before {
+  display: none !important;
+}
+
+.theme-minimal .editor-header {
+  background: #fff !important;
+  border-bottom: 1px solid #e0e0e0 !important;
+  backdrop-filter: none !important;
+}
+
+.theme-minimal .editor-title-animated {
+  color: #333 !important;
+}
+
+.theme-minimal .glass-modal {
+  background: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: none !important;
+}
+
+.theme-minimal .modal-content {
+  background: #fff !important;
+  border: 1px solid #e0e0e0 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+}
+
+.theme-minimal .modal-title {
+  color: #333 !important;
+}
+
+.theme-minimal .modal-subtitle {
+  color: #666 !important;
+}
+
+.theme-minimal .upload-drop-zone {
+  background: #f8f9fa !important;
+  border: 2px dashed #ddd !important;
+  color: #666 !important;
+}
+
+.theme-minimal .upload-drop-zone:hover,
+.theme-minimal .upload-drop-zone.drag-over {
+  border-color: #007bff !important;
+  background: #e3f2fd !important;
+}
+
+.theme-minimal .modal-upload-icon {
+  color: #007bff !important;
+}
+
+.theme-minimal .upload-hint {
+  color: #666 !important;
+}
+
+.theme-minimal .upload-button {
+  background: #007bff !important;
+  color: #fff !important;
+  box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2) !important;
+}
+
+.theme-minimal .upload-button:hover {
+  background: #0056b3 !important;
+}
+
+.theme-minimal .pdf-preview-container {
+  background: #fff !important;
+  border: 1px solid #e0e0e0 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+}
+
+.theme-minimal .editor-page-nav {
+  background: #fff !important;
+  border: 1px solid #e0e0e0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.theme-minimal .page-nav-btn {
+  background: #007bff !important;
+  color: #fff !important;
+  box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2) !important;
+}
+
+.theme-minimal .page-nav-btn:hover {
+  background: #0056b3 !important;
+}
+
+.theme-minimal .page-nav-btn:disabled {
+  background: #ddd !important;
+  color: #999 !important;
+}
+
+.theme-minimal .page-nav-info {
+  color: #333 !important;
+}
+
+.theme-minimal .editor-toolbar {
+  background: #fff !important;
+  border-top: 1px solid #e0e0e0 !important;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.theme-minimal .toolbar-tool {
+  color: #333 !important;
+}
+
+.theme-minimal .toolbar-tool:hover {
+  background: #f8f9fa !important;
+}
+
+.theme-minimal .toolbar-tool.disabled {
+  color: #999 !important;
+}
+
+.theme-minimal .editor-indicator {
+  background: #fff !important;
+  color: #333 !important;
+  border: 1px solid #e0e0e0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  backdrop-filter: none !important;
+}
+
+.theme-minimal .editor-indicator.delete-mode {
+  background: #fff5f5 !important;
+  color: #dc3545 !important;
+  border-color: #dc3545 !important;
+}
+
+.theme-minimal .editor-indicator.erase-mode {
+  background: #f0fdfa !important;
+  color: #059669 !important;
+  border-color: #059669 !important;
+}
+
+.theme-minimal .editor-indicator.move-mode {
+  background: #f0f4ff !important;
+  color: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+}
+
+.theme-minimal .text-element {
+  border: 1px solid #007bff !important;
+  background: rgba(0, 123, 255, 0.1) !important;
+}
+
+.theme-minimal .text-element:hover {
+  border-color: #0056b3 !important;
+}
+
+.theme-minimal .color-picker {
+  background: #fff !important;
+  border: 1px solid #e0e0e0 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+}
+
+.theme-minimal .signature-canvas {
+  border: 1px solid #ddd !important;
+  background: #fff !important;
+}

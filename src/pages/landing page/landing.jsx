@@ -11,6 +11,7 @@ import {
   FaTrash,
   FaClone
 } from 'react-icons/fa';
+import ThemeSwitcher from '../../components/ThemeSwitcher';
 import './landing.css';
 import * as pdfjsLib from 'pdfjs-dist/build/pdf';
 
@@ -144,9 +145,12 @@ const Landing = () => {
         <div className="nav-logo">
           <span className="logo-text">PDF<span className="highlight">Fusion</span></span>
         </div>
-        <Link to="/editor" className="cta-button">
-          Try Now <FaRocket className="btn-icon" />
-        </Link>
+        <div className="nav-actions">
+          <ThemeSwitcher />
+          <Link to="/editor" className="cta-button">
+            Try Now <FaRocket className="btn-icon" />
+          </Link>
+        </div>
       </nav>
       
       {/* Hero section */}

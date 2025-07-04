@@ -7,6 +7,7 @@ import './editor.css';
 import './react-pdf-overrides.css';
 import EditToolbar from './EditToolbar';
 import FilterToolbar from './FilterToolbar';
+import ThemeSwitcher from '../../components/ThemeSwitcher';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
@@ -1025,6 +1026,7 @@ function PngPreview({ pdfFile, pageNum }) {
         <>
           <header className="editor-header">
             <span className="editor-title-animated">PDF Editor</span>
+            <ThemeSwitcher />
           </header>
           {/* Page navigation bar above the PDF preview (not above toolbar) */}
           {!showModal && pdfFile && numPages && (
